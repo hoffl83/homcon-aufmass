@@ -1,0 +1,15 @@
+// Cloudflare Worker: Passwortschutz (worker.js) vor den statischen App-Dateien.
+// Der Name muss mit dem Worker im Cloudflare-Dashboard übereinstimmen.
+{
+  "name": "homcon-aufmass",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    // Worker prüft jede Anfrage, bevor eine Datei ausgeliefert wird
+    "run_worker_first": true
+  },
+  // Im Dashboard gesetzte Variablen beim Deploy behalten (APP_PASSWORD und AUTH_SECRET sind Secrets)
+  "keep_vars": true
+}

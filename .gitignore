@@ -1,0 +1,12 @@
+.DS_Store
+*.zip
+node_modules/
+
+# Aufmaß-Daten (Kundendaten) nie hochladen
+*.csv
+*.json
+backups/
+*.docx
+!manifest.webmanifest
+.wrangler/
+privat/

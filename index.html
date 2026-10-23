@@ -1,0 +1,1432 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5A6E61">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Aufmaß Heizlast</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Farbschema: Anthrazit #2E3133, Salbeigrün #5A6E61, Sandbeige #CEC8BC, Warmweiß #F7F6F2.
+   Layout: Arbeitsblatt-Prinzip. Feste Kopfleiste mit Reitern, darunter Formularblöcke im Raster; Messwerte in Mono, Wärmeverluste in dunklem Salbeigrün. */
+:root{
+  --paper:#F7F6F2; --surface:#FFFFFF; --sunk:#ECE9E2; --ink:#2E3133; --muted:#62686A; --line:#D9D4C9;
+  --petrol:#5A6E61; --petrol-ink:#FFFFFF; --amber:#43544A; --amber-soft:#E9E5DC; --danger:#A8322A; --ok:#4E7A5C;
+  --f-display:"IBM Plex Sans Condensed","Roboto Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",Roboto,"Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Roboto Mono",Menlo,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#1E2122; --surface:#2E3133; --sunk:#171919; --ink:#F7F6F2; --muted:#B4AFA5; --line:#44494B;
+  --petrol:#93AA9A; --petrol-ink:#1E2122; --amber:#C3D3C5; --amber-soft:#363D39; --danger:#E8857B; --ok:#93C2A1; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#1E2122; --surface:#2E3133; --sunk:#171919; --ink:#F7F6F2; --muted:#B4AFA5; --line:#44494B;
+  --petrol:#93AA9A; --petrol-ink:#1E2122; --amber:#C3D3C5; --amber-soft:#363D39; --danger:#E8857B; --ok:#93C2A1; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;letter-spacing:.005em}
+h1{font-size:1.45rem} h2{font-size:1.2rem} h3{font-size:1.02rem}
+.num,output,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--petrol);outline-offset:2px}
+
+/* Kopf */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px;min-height:60px}
+.brand{display:flex;flex:none}.brand img{display:block;height:28px;width:auto;max-width:96px;object-fit:contain}
+.top h1{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.status.warn{color:var(--danger)}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:12px 16px;font-family:var(--f-display);font-weight:600;font-size:1rem;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--petrol)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--petrol)}
+.btn.primary{background:var(--petrol);color:var(--petrol-ink);border-color:var(--petrol)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.small{min-height:36px;padding:0 10px;font-size:.88rem}
+.btn.danger{color:var(--danger)}
+.btn.danger.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
+.icon{width:20px;height:20px;flex:none}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+main{padding-block:20px 80px;display:grid;gap:20px}
+.block{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:14px;min-width:0}
+.block-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* Formular */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px 16px}
+.f{display:grid;gap:4px;min-width:0}
+.f.wide{grid-column:1/-1}
+.f>span{font-size:.8rem;color:var(--muted);font-weight:500}
+.in{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper)}
+.in:focus{border-color:var(--petrol);background:var(--surface)}
+textarea.in{min-height:84px;resize:vertical}
+select.in{appearance:auto}
+.unit{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+
+/* Projektliste */
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:10px;cursor:pointer;text-align:left}
+.pcard:hover{border-color:var(--petrol)}
+.pcard .meta{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.badge{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:var(--amber-soft);color:var(--amber)}
+.empty{padding:32px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+
+/* Räume */
+.rooms{display:grid;gap:8px}
+.rcard{display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);cursor:pointer;text-align:left;width:100%}
+.rcard:hover{border-color:var(--petrol)}
+.rcard .nm{font-weight:600}
+.rcard .val{font-family:var(--f-mono);color:var(--amber);font-weight:500;text-align:right}
+.bar{grid-column:1/-1;height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--amber)}
+.sum{display:flex;gap:28px;flex-wrap:wrap;padding:14px 16px;border-radius:var(--r);background:var(--amber-soft)}
+.sum div{display:grid}
+.sum b{font-family:var(--f-mono);font-size:1.35rem;color:var(--amber);font-weight:500}
+
+/* Bauteile */
+.bts{display:grid;gap:10px}
+.bt{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:var(--r);padding:12px;display:grid;gap:10px;background:var(--surface)}
+.bt.opening{border-left-color:var(--petrol);margin-left:18px}
+.bt-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bt-top select.in{width:auto;min-width:170px;flex:0 1 auto}
+.bt-top .bez{flex:1 1 160px}
+.bt-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px 10px}
+.bt-fields .f>span{font-size:.72rem}
+.bt-fields .f.w2{grid-column:span 2}
+.bt-res{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:.88rem}
+.bt-res output{font-weight:500}
+.bt-res .phi{color:var(--amber)}
+.bt-res .sp{flex:1}
+.addbar{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Tabellen */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tfoot td{font-weight:600;border-bottom:0;border-top:2px solid var(--ink)}
+td.hl{color:var(--amber)}
+tr.grp td{font-weight:600;background:var(--sunk);border-top:1px solid var(--line)}
+tr.sub td{font-weight:600;border-bottom:2px solid var(--line)}
+
+/* Wärmepumpen-Eignung */
+.wp-ok{color:var(--ok)!important}
+.wp-amber{color:var(--ink)!important}
+.wp-danger{color:var(--danger)!important}
+td.warn{color:var(--danger);font-weight:600}
+td.wrap{white-space:normal;min-width:180px}
+
+/* Plausibilität */
+.pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pl-list li{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 10px;border-radius:var(--r);background:var(--sunk);font-size:.92rem}
+.pl-list li>span:nth-child(2){flex:1;min-width:0}
+.pl-tag{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.pl-f .pl-tag{background:var(--danger);color:var(--surface)}
+.pl-w .pl-tag{background:var(--ink);color:var(--surface)}
+.pl-i .pl-tag{background:var(--line);color:var(--ink)}
+.pl-badge{font-size:.78rem;font-weight:600;color:var(--danger);white-space:nowrap}
+#plausroom:empty{display:none}
+
+/* Version */
+.ver{text-align:center;font-size:.8rem;margin:24px 0 8px;font-family:var(--f-mono)}
+.updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:25;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;
+  background:var(--ink);color:var(--paper);padding:8px 8px 8px 16px;border-radius:var(--r);width:max-content;max-width:calc(100% - 32px)}
+
+/* Checkboxen */
+.chks{display:flex;flex-wrap:wrap;gap:4px 18px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.chk input{width:22px;height:22px;accent-color:var(--petrol);margin:0}
+.sub-h{font-size:.95rem;margin:16px 0 4px;font-weight:600}
+.fcheck{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.fcheck .fc{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 6px 6px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.fcheck .fc.ok{border-color:var(--ok)}
+.fcheck .fc .st{font-size:.85rem;color:var(--muted)}
+.fcheck .fc.ok .st{color:var(--ok);font-weight:600}
+
+/* Laser */
+.laser .dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.laser.an .dot{background:var(--ok)}
+.laser.verbinde .dot{background:var(--amber)}
+.laser.fehler .dot,.laser.getrennt .dot{background:var(--danger)}
+.laserhit{outline:3px solid var(--ok);outline-offset:1px}
+.lasermeter{font-family:var(--f-mono);font-size:2rem;color:var(--amber)}
+.laserlog{font-family:var(--f-mono);font-size:.75rem;background:var(--sunk);padding:8px 10px;border-radius:var(--r);max-height:180px;overflow:auto;white-space:pre;margin:0}
+
+/* Raum aus Maßen */
+.geo summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.geo summary::-webkit-details-marker{display:none}
+.geo summary::after{content:"▾";color:var(--muted)}
+.geo[open] summary::after{content:"▴"}
+.geo summary h2{margin:0}
+.geo .grid{margin-top:12px}
+
+/* Wohneinheiten */
+.we-head{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) auto;gap:8px;align-items:end}
+.we-head .tot{font-family:var(--f-mono);color:var(--amber);font-weight:500;white-space:nowrap;padding-bottom:10px}
+@media (max-width:600px){ .we-head{grid-template-columns:1fr} .we-head .tot{padding-bottom:0} }
+
+/* Fotos */
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ph{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface);display:grid}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--sunk)}
+.ph .pc{padding:8px;display:grid;gap:6px}
+.ph .in{min-height:38px;font-size:.88rem}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+.note{font-size:.85rem;color:var(--muted);border-left:3px solid var(--line);padding-left:10px}
+.note a{color:var(--petrol)}
+.plzhint{border-left-color:var(--petrol)}
+.plzhint .row{margin-top:8px}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.banner{background:var(--amber-soft);color:var(--ink);padding:10px 14px;border-radius:var(--r);font-size:.9rem}
+
+/* Dialog */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.dlg{background:var(--surface);border-radius:var(--r);padding:18px;width:min(720px,100%);max-height:90vh;display:grid;gap:12px;grid-template-rows:auto 1fr auto}
+.dlg textarea{min-height:240px;font-family:var(--f-mono);font-size:.78rem}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:var(--r);z-index:30;font-size:.9rem}
+
+@media (max-width:600px){ .bt.opening{margin-left:8px} .sum{gap:18px} }
+@media (prefers-reduced-motion:no-preference){ .bar i{transition:width .25s ease} }
+@media print{
+  .top,.noprint{display:none!important} body{background:#fff;color:#000} .block{border:0;padding:0}
+  body.printing>*:not(#printroot){display:none!important}
+}
+/* Aufnahmeprotokoll – nur im Druck sichtbar, immer hell */
+#printroot{display:none}
+@media print{
+  @page{size:A4;margin:16mm 14mm 18mm}
+  body.printing #printroot{display:block;color:#2E3133;background:#fff;font:9.5pt/1.4 var(--f-body,"IBM Plex Sans",system-ui,sans-serif)}
+  #printroot h1{font-size:16pt;margin:10px 0 8px}
+  #printroot h2{font-size:12.5pt;margin:16px 0 6px;padding-bottom:3px;border-bottom:1.5px solid #5A6E61;break-after:avoid}
+  #printroot h3{font-size:10.5pt;margin:12px 0 4px;break-after:avoid}
+  #printroot h4{font-size:10pt;margin:0 0 2px}
+  #printroot h4 span{font-weight:400;color:#62686A;font-size:8.5pt}
+  #printroot section{break-inside:auto}
+  #printroot table{width:100%;border-collapse:collapse;margin:2px 0 8px;font-size:8.5pt}
+  #printroot th,#printroot td{padding:2px 5px;border-bottom:.5px solid #D9D4C9;text-align:left;vertical-align:top;white-space:normal}
+  #printroot thead th{font-size:7.5pt;text-transform:uppercase;letter-spacing:.04em;color:#62686A;border-bottom:1px solid #2E3133}
+  #printroot td.n,#printroot th.n{text-align:right;font-variant-numeric:tabular-nums}
+  #printroot tfoot td{border-top:1px solid #2E3133;font-weight:600}
+  #printroot tr{break-inside:avoid}
+  #printroot tr.pr-sub td{color:#4b5153}
+  #printroot table.kv th{width:38%;font-weight:500;color:#62686A;font-size:8.5pt;text-transform:none;letter-spacing:0}
+  .pr-bk{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:10px;border-bottom:1.5px solid #5A6E61;margin-bottom:18px}
+  .pr-marke{display:flex;gap:12px;align-items:center}
+  .pr-logo{height:16mm;max-width:45mm;object-fit:contain}
+  .pr-firma{font-family:var(--f-display);font-size:22pt;font-weight:600;line-height:1;color:#2E3133;letter-spacing:.01em}
+  .pr-zusatz{font-size:8pt;color:#5A6E61;margin-top:4px;max-width:85mm}
+  .pr-bk address{font-style:normal;font-size:8pt;line-height:1.45;text-align:right;color:#4b5153}
+  .pr-titel{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .pr-titel h1{margin:0!important}
+  .pr-titel div{font-size:9.5pt;color:#4b5153}
+  #printroot table.pr-objekt{margin-bottom:6px;background:#F7F6F2}
+  #printroot table.pr-objekt th{width:16%;font-weight:500;color:#62686A;text-transform:none;letter-spacing:0;font-size:8.5pt;border:0;padding:4px 6px}
+  #printroot table.pr-objekt td{width:34%;border:0;padding:4px 6px}
+  .pr-rk{font-size:8.5pt;color:#4b5153;margin-bottom:3px}
+  .pr-room{break-inside:avoid-page;margin:8px 0 10px}
+  .pr-small{font-size:8pt;color:#62686A;margin:2px 0 6px}
+  .pr-we{margin-top:14px}
+  .pr-list{margin:2px 0 8px;padding-left:16px}
+  .pr-fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pr-fgrid figure{margin:0;break-inside:avoid}
+  .pr-fgrid img{width:100%;max-height:75mm;object-fit:contain;background:#F7F6F2;display:block}
+  .pr-fgrid figcaption{font-size:8pt;margin-top:2px}
+  .pr-sig{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:36px;break-inside:avoid;font-size:8pt;color:#62686A}
+  .pr-sig span{display:block;border-bottom:1px solid #2E3133;height:34px;margin-bottom:4px}
+  .pr-foot{margin-top:22px;padding-top:5px;border-top:1px solid #5A6E61;font-size:7.5pt;color:#62686A;text-align:center}
+  #printroot h2{color:#5A6E61}
+}
+</style>
+</head>
+<body>
+
+
+<div id="app"></div>
+<div id="layer"></div>
+
+<script>
+"use strict";
+/* ============ Konstanten ============ */
+const TYPES = {
+  aw:{l:"Außenwand",adj:"aussen",u:"1,4"},
+  fe:{l:"Fenster",adj:"aussen",open:true,u:"2,8"},
+  tu:{l:"Außentür",adj:"aussen",open:true,u:"3,0"},
+  da:{l:"Dach / Dachschräge",adj:"aussen",u:"0,8"},
+  og:{l:"Oberste Geschossdecke",adj:"unbeheizt",u:"1,0"},
+  kd:{l:"Kellerdecke",adj:"unbeheizt",u:"1,2"},
+  bp:{l:"Bodenplatte",adj:"erdreich",u:"1,2"},
+  iw:{l:"Innenwand",adj:"beheizt",u:"2,0"},
+  dn:{l:"Decke/Boden zu Nachbarraum",adj:"beheizt",u:"1,0"}
+};
+const UPRESET = {
+  aw:[["1,4","Mauerwerk ungedämmt, vor 1978"],["1,5","Vollziegel 36 cm"],["0,8","Mauerwerk 1979–1983"],["0,6","Mauerwerk 1984–1994"],["0,24","WDVS 14 cm"],["0,20","GEG-Niveau"]],
+  fe:[["5,0","Einfachverglasung"],["2,8","Isolierverglasung vor 1995"],["1,3","2-fach Wärmeschutz"],["0,9","3-fach Wärmeschutz"]],
+  tu:[["3,0","Holztür alt"],["2,0","Tür 1980er"],["1,3","Haustür neu"]],
+  da:[["1,4","Dach ungedämmt"],["0,8","Dach 1969–1978"],["0,35","12 cm Dämmung"],["0,24","GEG-Niveau"]],
+  og:[["1,0","Holzbalkendecke ungedämmt"],["2,1","Betondecke ungedämmt"],["0,24","16 cm Dämmung"]],
+  kd:[["1,2","Betondecke ungedämmt"],["1,5","Kappendecke"],["0,35","8 cm Dämmung"]],
+  bp:[["1,2","ungedämmt"],["0,35","gedämmt"]],
+  iw:[["2,0","11,5 cm verputzt"],["1,5","24 cm verputzt"]],
+  dn:[["1,0","Massivdecke"],["0,9","Holzbalkendecke"]]
+};
+const ADJ = {aussen:"Außenluft",unbeheizt:"unbeheizter Raum",erdreich:"Erdreich",beheizt:"beheizter Nachbarraum"};
+const DIRS = ["","N","NO","O","SO","S","SW","W","NW","horiz."];
+const NUTZ = [["Wohnzimmer",20],["Schlafzimmer",20],["Kinderzimmer",20],["Arbeitszimmer",20],["Küche",20],["Esszimmer",20],["Bad",24],["WC",20],["Flur / Diele",15],["Treppenhaus",15],["Hauswirtschaft",15],["Sonstiges",20]];
+const ERZ = ["","Gas-Brennwert","Gas-Niedertemperatur","Gas-Konstanttemperatur","Öl-Brennwert","Öl-Niedertemperatur","Öl-Konstanttemperatur","Wärmepumpe Luft/Wasser","Wärmepumpe Sole/Wasser","Wärmepumpe Wasser/Wasser","Hybrid","Fernwärme","Pellet / Holz","Nachtspeicher / Elektro","Sonstiges"];
+const GTYP = ["","Einfamilienhaus","Doppelhaushälfte","Reihenhaus","Zweifamilienhaus","Mehrfamilienhaus","Nichtwohngebäude"];
+
+// Bei jeder Änderung zusammen mit CACHE in sw.js hochzählen (gleiche Zahl)
+const APP_VERSION = "17", APP_DATE = "23.10.2026";
+const IN_FRAME = (()=>{try{return window.self!==window.top}catch(e){return true}})();
+
+/* ============ Hilfen ============ */
+const $ = (s,el=document)=>el.querySelector(s);
+const uid = ()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = v=>{ if(v===""||v==null) return NaN; const n=parseFloat(String(v).replace(/\s/g,"").replace(",",".")); return isFinite(n)?n:NaN; };
+const nz = (v,d=0)=>{const n=num(v);return isNaN(n)?d:n};
+const fmt = (n,d=0)=> isFinite(n) ? n.toLocaleString("de-DE",{minimumFractionDigits:d,maximumFractionDigits:d}) : "–";
+const getP=(o,p)=>p.split(".").reduce((a,k)=>a==null?a:a[k],o);
+const setP=(o,p,v)=>{const ks=p.split(".");let a=o;ks.slice(0,-1).forEach(k=>{if(a[k]==null||typeof a[k]!=="object")a[k]={};a=a[k]});a[ks.at(-1)]=v};
+const today=()=>new Date().toISOString().slice(0,10);
+
+/* ============ Speicher (IndexedDB, Fallback Arbeitsspeicher) ============ */
+let db=null; const mem=new Map(); let storageOk=false;
+function idbOpen(){return new Promise((res,rej)=>{try{const r=indexedDB.open("aufmass-heizlast",2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("projects"))d.createObjectStore("projects",{keyPath:"id"});if(!d.objectStoreNames.contains("plz"))d.createObjectStore("plz",{keyPath:"plz"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+function tx(mode,fn,store="projects"){return new Promise((res,rej)=>{try{const t=db.transaction(store,mode);const st=t.objectStore(store);const r=fn(st);t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)}catch(e){rej(e)}})}
+async function dbAll(){ if(!db) return [...mem.values()]; try{ return await tx("readonly",s=>s.getAll()) }catch(e){ return [...mem.values()] } }
+async function dbPut(p){ mem.set(p.id,p); if(!db) return false; try{ await tx("readwrite",s=>s.put(p)); return true }catch(e){ return false } }
+async function dbDel(id){ mem.delete(id); if(db) try{ await tx("readwrite",s=>s.delete(id)) }catch(e){} }
+
+/* ============ Laser-Entfernungsmesser (Web Bluetooth) ============ */
+// Bosch-Laser senden Rahmen C0 55 <Länge> <Nutzdaten> <CRC-8 (Poly 0xA6, Start 0xAA)>. Nutzdaten: Typ (2 Byte LE),
+// Zähler (2 Byte LE), Wert float32 LE. Typ 0x0006 = Distanz in m. Nicht offiziell dokumentiert; nach Community-Analysen
+// von AdvancedDistance 50C (Service 0xFDE8) und GLM 50 C (Service 02a6c0d0). Der UniversalDistance 40C meldet
+// stattdessen Service 00005301-…-534f46540000 mit einer Characteristic 00004301 (Write + Indicate), ausgelesen
+// über chrome://bluetooth-internals; das Rahmenformat dort ist noch unbestätigt – Rohdaten zeigt der Laser-Dialog.
+const LASER_SVC=["00005301-0000-0041-5253-534f46540000",0xfde8,"02a6c0d0-0451-4000-b000-fb3210111989"];
+const LASER_INIT=new Uint8Array([0xC0,0x55,0x02,0x01,0x00,0x1A]);
+const L={dev:null,ch:null,state:"aus",info:"",log:[],steps:[],last:null,cnt:null,crc:null,field:null,next:true,manual:false,tries:0};
+// Nur Felder, die eine Länge in Metern erwarten
+const isLenField=el=>!!el&&el.tagName==="INPUT"&&(["b","h"].includes(el.dataset.bf)||/\.geo\.(l|b|gh)$|^raeume\.\d+\.h$/.test(el.dataset.bind||""));
+const fieldSel=el=>el.dataset.bind?`[data-bind="${el.dataset.bind}"]`:`[data-bt="${el.closest("[data-bt]").dataset.bt}"] [data-bf="${el.dataset.bf}"]`;
+function crc8(bytes){ let c=0xAA; for(const x of bytes){ c^=x; for(let i=0;i<8;i++) c=c&0x80?((c<<1)^0xA6)&0xFF:(c<<1)&0xFF; } return c; }
+// Rahmen zerlegen; null, wenn es kein Messrahmen ist
+function laserParse(dv){ const b=new Uint8Array(dv.buffer,dv.byteOffset,dv.byteLength);
+  if(b.length<12||b[0]!==0xC0||b[2]+4!==b.length) return null;
+  return {typ:b[3]|b[4]<<8, cnt:b[5]|b[6]<<8, v:dv.getFloat32(7,true), crc:crc8(b.subarray(0,b.length-1))===b[b.length-1]}; }
+function laserFrame(dv){ const b=new Uint8Array(dv.buffer,dv.byteOffset,dv.byteLength);
+  L.log.unshift([...b].map(x=>x.toString(16).padStart(2,"0")).join(" ")); L.log.length=Math.min(L.log.length,12);
+  const f=laserParse(dv); if(f) L.crc=f.crc;
+  // Nur Distanzen; der Zähler filtert doppelt gesendete Rahmen
+  if(!f||f.typ!==6||f.cnt===L.cnt||!isFinite(f.v)||f.v<=0||f.v>250){ laserPaint(); return; }
+  L.cnt=f.cnt; laserValue(f.v); }
+// Aktives Maßfeld, sonst das zuletzt benutzte; ein anderes aktives Eingabefeld (z. B. U-Wert) blockiert
+function laserTarget(){ const a=document.activeElement; if(isLenField(a)) return a;
+  if(a&&$("#app").contains(a)&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return "kein";
+  return L.field?document.querySelector(L.field):null; }
+function laserValue(v){ L.last=v; const s=v.toFixed(3).replace(".",","), el=laserTarget();
+  if(el==="kein"){ toast("Messung "+s+" m – dieses Feld erwartet keine Länge"); laserPaint(); return; }
+  if(!el){ toast("Messung "+s+" m – erst ein Maßfeld antippen"); laserPaint(); return; }
+  el.value=s; el.dispatchEvent(new Event("input",{bubbles:true}));
+  const hit=document.querySelector(fieldSel(el))||el; hit.classList.add("laserhit"); setTimeout(()=>hit.classList.remove("laserhit"),900);
+  if(L.next){ const all=[...document.querySelectorAll("#app input")].filter(isLenField), nx=all[all.indexOf(hit)+1];
+    if(nx){ nx.focus({preventScroll:false}); L.field=fieldSel(nx); } }
+  toast(s+" m übernommen"); laserPaint(); }
+async function laserConnect(){
+  try{ L.dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:LASER_SVC}); }
+  catch(e){ if(e.name!=="NotFoundError") toast("Bluetooth: "+e.message); return; }
+  L.manual=false; L.tries=0; L.dev.addEventListener("gattserverdisconnected",laserLost); await laserOpen(); }
+// Jeder Schritt landet im Protokoll der Diagnose, damit sich ein Abbruch am Gerät nachvollziehen lässt
+const laserStep=t=>{ L.steps.push(new Date().toLocaleTimeString("de-DE")+"  "+t); laserPaint(); };
+const withTimeout=(pr,ms,what)=>Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej(new Error(what+": keine Antwort nach "+ms/1000+" s")),ms))]);
+const propTxt=c=>Object.entries({read:"R",write:"W",writeWithoutResponse:"w",notify:"N",indicate:"I"}).filter(([k])=>c.properties[k]).map(([,v])=>v).join("");
+async function laserOpen(){ if(!L.dev) return; L.state="verbinde"; L.info=""; L.steps=[]; laserPaint();
+  try{ laserStep(`Verbinde mit „${L.dev.name||"unbenannt"}“ (ID ${L.dev.id.slice(0,8)}) …`);
+    const gatt=await withTimeout(L.dev.gatt.connect(),20000,"GATT-Verbindung"); laserStep("GATT verbunden"); let ch=null;
+    for(const s of LASER_SVC){ const sn=typeof s==="number"?"0x"+s.toString(16).toUpperCase():s.slice(0,8);
+      try{ const cs=await withTimeout((await withTimeout(gatt.getPrimaryService(s),10000,"Service "+sn)).getCharacteristics(),10000,"Characteristics "+sn);
+        laserStep(`Service ${sn}: gefunden – ${cs.map(c=>c.uuid.slice(0,8)+"("+propTxt(c)+")").join(", ")||"keine Characteristics"}`);
+        ch=cs.find(c=>/^(02a6c0d|00004301)/.test(c.uuid)&&(c.properties.notify||c.properties.indicate))||cs.find(c=>c.properties.notify||c.properties.indicate); if(ch) break;
+      }catch(e){ laserStep(`Service ${sn}: ${e.name==="NotFoundError"?"nicht vorhanden":e.name+" – "+e.message}`); } }
+    if(!ch){ L.state="fehler"; L.info="Kein bekannter Bosch-Messdienst gefunden – Protokoll unter „Diagnose“ an den Entwickler."; L.manual=true; try{ L.dev.gatt.disconnect() }catch(x){} laserPaint(); return; }
+    L.ch=ch; ch.addEventListener("characteristicvaluechanged",e=>laserFrame(e.target.value));
+    await withTimeout(ch.startNotifications(),10000,"Benachrichtigungen"); laserStep("Benachrichtigungen aktiv auf "+ch.uuid.slice(0,8));
+    try{ await (ch.properties.writeWithoutResponse?ch.writeValueWithoutResponse(LASER_INIT):ch.writeValue(LASER_INIT)); laserStep("Startbefehl gesendet"); }
+    catch(e){ laserStep("Startbefehl nicht gesendet: "+e.name+" – "+e.message); }
+    L.state="an"; L.tries=0; L.cnt=null; L.info=`${L.dev.name||"Unbenanntes Gerät"} · Service ${ch.service.uuid.slice(0,8)} · Characteristic ${ch.uuid.slice(0,8)}`; laserPaint(); toast("Laser verbunden");
+  }catch(e){ laserStep("Fehler: "+e.name+" – "+e.message); L.state="fehler"; L.info="Verbindung fehlgeschlagen – Details unter „Diagnose“."; L.manual=true; try{ L.dev.gatt.disconnect() }catch(x){} laserPaint(); } }
+// Laser schaltet sich nach einiger Zeit ab: dreimal neu versuchen, danach „Neu verbinden“ im Dialog
+function laserLost(){ L.ch=null; if(L.manual){ if(L.state!=="fehler") L.state="aus"; laserPaint(); return; }
+  L.state="getrennt"; laserPaint(); if(L.tries++<3) setTimeout(()=>{ if(!L.manual&&L.state!=="an") laserOpen(); },3000*L.tries); }
+function laserOff(){ L.manual=true; try{ L.dev?.gatt.disconnect() }catch(e){} L.dev=null; L.ch=null; L.state="aus"; L.info=""; laserPaint(); }
+const LASER_TXT={aus:"nicht verbunden",verbinde:"verbindet …",an:"verbunden",getrennt:"getrennt",fehler:"Fehler"};
+function laserBtn(){ return `<button class="btn ghost laser ${L.state}" id="laserbtn" data-act="laser" aria-label="Laser-Entfernungsmesser: ${LASER_TXT[L.state]}">${I.bt}<span class="dot"></span></button>` }
+function laserDlgBody(){
+  if(!navigator.bluetooth) return `<p>Bluetooth ist in diesem Browser nicht verfügbar. Der Laser funktioniert in Chrome auf Android (oder am PC), wenn die App über HTTPS oder localhost geöffnet ist${IN_FRAME?" – nicht in dieser Vorschau":""}.</p>`;
+  const tgt=L.field?document.querySelector(L.field):null, lbl=tgt?.closest("label")?.querySelector("span")?.textContent.trim();
+  return `<div class="row"><span class="laser ${L.state}" style="display:inline-flex;gap:8px;align-items:center"><span class="dot"></span><b>${LASER_TXT[L.state]}</b></span><span class="muted" style="font-size:.85rem">${esc(L.info)}</span></div>
+    ${L.last!=null?`<div><span class="label muted" style="font-size:.8rem">Letzte Messung</span><div class="lasermeter">${fmt(L.last,3)} m</div></div>`:""}
+    <p class="muted" style="margin:0;font-size:.9rem">${tgt?`Nächste Messung geht in: <b>${esc(lbl||"Maßfeld")}</b>`:"Ein Maßfeld antippen (Breite, Höhe, Länge …) und dann am Laser messen."}</p>
+    <label class="row" style="min-height:44px"><input type="checkbox" data-act="lasernext"${L.next?" checked":""} style="width:22px;height:22px"> Nach jeder Messung ins nächste Maßfeld springen</label>
+    <div class="row">${L.state==="an"||L.state==="verbinde"?`<button class="btn danger" data-act="laseroff">Trennen</button>`:`<button class="btn primary" data-act="laserconn">Laser verbinden</button>${L.dev?`<button class="btn" data-act="laserre">Neu verbinden</button>`:""}`}</div>
+    <p class="note">Gerät: Bosch UniversalDistance 40C (oder andere Bosch-Laser mit Bluetooth). Bluetooth am Laser einschalten und die MeasureOn-App schließen – der Laser verbindet sich nur mit einem Gerät. Übernommen werden nur Längenmessungen, keine Flächen oder Volumen.</p>
+    <details${L.state==="fehler"?" open":""}><summary class="muted" style="cursor:pointer;min-height:44px;display:flex;align-items:center">Diagnose${L.crc===false?" · Prüfsumme weicht ab":""}</summary>
+      <div class="sub-h" style="margin-top:4px">Verbindungsprotokoll</div><pre class="laserlog">${L.steps.length?esc(L.steps.join("\n")):"Noch kein Verbindungsversuch."}</pre>
+      <div class="sub-h">Empfangene Rahmen</div><pre class="laserlog">${L.log.length?esc(L.log.join("\n")):"Noch keine Daten empfangen."}</pre>
+      <button class="btn small" data-act="lasercopy" style="margin-top:8px">${I.copy}Diagnose kopieren</button></details>`; }
+function laserDialog(){ $("#layer").innerHTML=`<div class="modal" data-act="close"><div class="dlg" role="dialog" aria-label="Laser-Entfernungsmesser" style="grid-template-rows:auto auto">
+    <div class="block-head"><h2>Laser-Entfernungsmesser</h2><button class="btn small ghost" data-act="close">Schließen</button></div>
+    <div id="laserdlg" style="display:grid;gap:12px;overflow:auto">${laserDlgBody()}</div></div></div>`; }
+function laserPaint(){ const b=$("#laserbtn"); if(b) b.outerHTML=laserBtn(); const d=$("#laserdlg"); if(d){ const open=d.querySelector("details")?.open; d.innerHTML=laserDlgBody(); if(open) d.querySelector("details").open=true; } }
+
+/* ============ Heizkörper und Vorlauftemperatur ============ */
+// Norm-Wärmeleistung je Meter bei 75/65/20 °C (DIN EN 442) und Heizkörperexponent n für Flachheizkörper aus
+// Buderus Planungsunterlage „Kennwerte und Wärmeleistungen von Flachheizkörpern“ 02/2002, Tab. 8/1
+// (Logatrend VK-/K-Profil). Andere Fabrikate weichen etwas ab – deshalb nur Schätzwert, Typenschild geht vor.
+const HK_TAB={ // Bauhöhe mm → Typ → [W/m, n]
+  300:{10:[341,1.31],11:[539,1.28],21:[742,1.29],22:[1000,1.29],33:[1440,1.31]},
+  400:{10:[442,1.29],11:[689,1.28],21:[925,1.30],22:[1260,1.30],33:[1795,1.32]},
+  500:{10:[540,1.27],11:[828,1.29],21:[1101,1.31],22:[1506,1.32],33:[2129,1.32]},
+  600:{10:[633,1.25],11:[960,1.30],21:[1273,1.31],22:[1741,1.33],33:[2449,1.33]},
+  900:{10:[897,1.26],11:[1311,1.30],21:[1782,1.32],22:[2399,1.34],33:[3343,1.33]}};
+const HK_TYP=[["22","Flachheizkörper Typ 22"],["21","Flachheizkörper Typ 21"],["11","Flachheizkörper Typ 11"],["10","Flachheizkörper Typ 10"],["33","Flachheizkörper Typ 33"],
+  ["glied","Gliederheizkörper (Guss/Stahl)"],["bad","Badheizkörper"],["konv","Konvektor"],["sonst","sonstiger"]];
+const isFlach=t=>!!HK_TAB[300][t];
+// Logarithmische Übertemperatur; Normbedingung 75/65/20 °C = 49,83 K, alte Norm 90/70/20 °C (DIN 4703) = 59,44 K
+const dtln=(tv,tr,ti)=>tv>tr&&tr>ti?(tv-tr)/Math.log((tv-ti)/(tr-ti)):0;
+const DT_N=dtln(75,65,20), DT_90=dtln(90,70,20);
+function newHk(){ return {id:uid(),typ:"22",bez:"",l:"",h:"600",anz:"",qg:"",qn:"",norm:"75",n:""} }
+// Tabellenwert für Flachheizkörper, zwischen den Bauhöhen linear interpoliert
+function hkTab(typ,h){ const hs=[300,400,500,600,900]; if(!isFlach(typ)||!(h>=300&&h<=900)) return null;
+  const hi=hs.find(x=>x>=h), lo=[...hs].reverse().find(x=>x<=h), t=hi===lo?0:(h-lo)/(hi-lo), a=HK_TAB[lo][typ], b=HK_TAB[hi][typ];
+  return {wm:a[0]+(b[0]-a[0])*t, n:a[1]+(b[1]-a[1])*t}; }
+// Normleistung bei 75/65/20 °C und Exponent; src: "eingabe" | "glied" | "tabelle" | null (fehlt)
+function hkNorm(hk){ const tab=hkTab(hk.typ,num(hk.h)); let n=num(hk.n); if(!(n>0)) n=tab?tab.n:1.3;
+  let q=num(hk.qn), src="eingabe";
+  if(!(q>0)&&hk.typ==="glied"){ q=num(hk.anz)*num(hk.qg); src="glied"; }
+  if(!(q>0)&&tab&&num(hk.l)>0){ q=tab.wm*num(hk.l)/1000; src="tabelle"; }
+  if(!(q>0)) return {q:NaN,n,src:null};
+  if(src!=="tabelle"&&hk.norm==="90") q*=Math.pow(DT_N/DT_90,n);
+  return {q,n,src}; }
+function hkQ(hk,tv,tr,ti){ const {q,n}=hkNorm(hk), d=dtln(tv,tr,ti); return q>0&&d>0?q*Math.pow(d/DT_N,n):0; }
+const wpZiel=p=>nz(p.anlage.wpVl,55), wpSpr=p=>Math.max(1,nz(p.anlage.wpSpreiz,5));
+// Nötige Vorlauftemperatur eines Raums bei Spreizung σ: kleinste θV, bei der Σ Q ≥ Φ_HL (Bisektion bis 90 °C)
+function roomVL(p,r,phi){ const hk=r.hk||[], ti=nz(r.ti,20), sp=wpSpr(p); if(!hk.length||!(phi>0)) return NaN;
+  const Q=tv=>hk.reduce((s,h)=>s+hkQ(h,tv,tv-sp,ti),0); let lo=ti+sp, hi=90;
+  if(Q(hi)<phi) return Infinity;
+  for(let i=0;i<40;i++){ const m=(lo+hi)/2; Q(m)>=phi?hi=m:lo=m; } return hi; }
+// Bewertung je Raum bei der Ziel-Vorlauftemperatur
+function wpRooms(p,c){ const tv=wpZiel(p), sp=wpSpr(p);
+  return p.raeume.map(r=>{ const phi=c.r[r.id].HL, hk=r.hk||[], ti=nz(r.ti,20);
+    const qn=hk.reduce((s,h)=>s+(hkNorm(h).q||0),0), qz=hk.reduce((s,h)=>s+hkQ(h,tv,tv-sp,ti),0), miss=hk.some(h=>!(hkNorm(h).q>0));
+    // nötige Normleistung (75/65/20) neuer Heizkörper mit n = 1,3, um Φ_HL bei Ziel-VL zu decken
+    const f=Math.pow(dtln(tv,tv-sp,ti)/DT_N,1.3), need=f>0?phi/f:Infinity;
+    let st; if(r.fbh==="ja"&&!hk.length) st="fbh"; else if(!(phi>0)) st="keine"; else if(!hk.length) st="ohne"; else if(miss) st="unvollst"; else st=qz>=phi?"ok":"tausch";
+    return {r,phi,qn,qz,deck:phi>0?qz/phi:NaN,vl:roomVL(p,r,phi),need,st}; }); }
+const WP_ST={ok:"reicht",tausch:"Heizkörper tauschen/ergänzen",ohne:"kein Heizkörper erfasst",unvollst:"Leistung fehlt",fbh:"Fußbodenheizung – nicht berechnet",keine:"keine Heizlast"};
+function wpRating(vl){ if(!isFinite(vl)) return ["über 90 °C – Heizflächen reichen nicht","danger"];
+  if(vl<=45) return ["sehr gut für eine Wärmepumpe","ok"]; if(vl<=55) return ["für eine Wärmepumpe geeignet","ok"];
+  if(vl<=60) return ["bedingt geeignet – einzelne Heizkörper tauschen","amber"]; return ["erst Heizkörper tauschen oder Hülle verbessern","danger"]; }
+
+/* ============ PLZ-Tabelle Norm-Außentemperatur (DIN/TS 12831-1) ============ */
+// Wird auf dem Gerät gelernt (Wert aus der BWP-Klimakarte ablesen und merken) oder per CSV eingespielt.
+const KLIMAKARTE="https://www.waermepumpe.de/normen-technik/klimakarte/";
+const PLZ=new Map(); // plz → {plz, te, ort, src:"hand"|"import", t}
+const plzOk=v=>/^\d{5}$/.test(String(v??"").trim());
+async function plzLoad(){ if(!db) return; try{ (await tx("readonly",s=>s.getAll(),"plz")||[]).forEach(e=>PLZ.set(e.plz,e)) }catch(e){} }
+async function plzPut(list){ list.forEach(e=>PLZ.set(e.plz,e)); if(!db||!list.length) return; try{ await tx("readwrite",s=>{list.forEach(e=>s.put(e))},"plz") }catch(e){} }
+// θe aus der Tabelle setzen, solange der Wert nicht von Hand geändert wurde
+function plzApply(p){ const e=PLZ.get(String(p.gebaeude.plz||"").trim()); if(!e) return false;
+  const auto = p.klima.teSrc==="plz" || (!p.klima.teSrc && (p.klima.te==="-12"||p.klima.te===""));
+  if(!auto||p.klima.te===e.te) return false;
+  p.klima.te=e.te; p.klima.teSrc="plz"; return true; }
+function plzParse(text){ const out=[];
+  for(const line of text.replace(/^﻿/,"").split(/\r?\n/)){
+    const cells=line.split(/[;\t]/.test(line)?/[;\t]/:",").map(c=>c.trim().replace(/^"|"$/g,"").trim().replace("−","-"));
+    const pc=cells.find(c=>/^\d{4,5}$/.test(c)); if(!pc) continue; // Excel streicht führende Nullen (01067 → 1067)
+    const rest=cells.filter(c=>c!==pc);
+    const tc=rest.find(c=>/^-?\d+([.,]\d+)?$/.test(c)&&num(c)>=-30&&num(c)<=10); if(tc==null) continue;
+    out.push({plz:pc.padStart(5,"0"),te:tc.replace(".",","),ort:rest.find(c=>c&&isNaN(num(c)))||"",src:"import",t:Date.now()}); }
+  return out; }
+function csvPlz(){ const L=["PLZ;Ort;θe °C;Quelle"];
+  [...PLZ.values()].sort((a,b)=>a.plz.localeCompare(b.plz)).forEach(e=>L.push([e.plz,e.ort,e.te,e.src==="import"?"Import":"vor Ort gemerkt"].map(csvCell).join(";")));
+  return "﻿"+L.join("\r\n"); }
+
+/* ============ Datenmodell ============ */
+function newProject(){
+  return {id:uid(),created:Date.now(),updated:Date.now(),
+    gebaeude:{bez:"Neues Objekt",auftraggeber:"",strasse:"",plz:"",ort:"",typ:"",baujahr:"",we:"1",geschosse:"",keller:"",dg:"",wfl:"",datum:today(),sanierung:"",notiz:""},
+    klima:{te:"-12",teSrc:"",duwb:"0,05",fu:"0,5",fe:"0,6"},
+    uvor:Object.assign({},UVOR_DEF),
+    anlage:{erz:"",hersteller:"",baujahr:"",leistung:"",heizflaechen:"",vl:"",rl:"",abgleich:"",ww:"",wwspeicher:"",lueftung:"",v1j:"",v1m:"",v1e:"kWh",v2j:"",v2m:"",v2e:"kWh",v3j:"",v3m:"",v3e:"kWh",notiz:""},
+    einheiten:[],raeume:[],fotos:[]};
+}
+function newRoom(p,we=""){ return {id:uid(),name:"Raum "+(p.raeume.length+1),we,geschoss:"EG",nutzung:"Wohnzimmer",ti:"20",fl:"",h:"2,50",n:"0,5",notiz:"",bt:[],hk:[],fbh:""} }
+// Raum aus Maßen: Länge × Breite, vier Seiten (Länge, Breite, Länge, Breite im Uhrzeigersinn), Boden, Decke
+const GEO_SIDE=[["","– nichts (gleich warm)"],["aw","Außenwand"],["iw","Innenwand zu kälterem Raum"],["ub","Wand zu unbeheizt"]];
+const GEO_BODEN=[["kd","Keller, unbeheizt"],["bp","Erdreich (Bodenplatte)"],["dn","beheizter Raum darunter"],["","nicht anlegen"]];
+const GEO_DECKE=[["og","Dachboden, unbeheizt"],["da","Dach / Dachschräge"],["dn","beheizter Raum darüber"],["","nicht anlegen"]];
+const geoDirs=g=>g.dreh==="45"?["NO","SO","SW","NW"]:["N","O","S","W"];
+function geoOf(p,r){ if(!r.geo){ const prev=[...p.raeume].reverse().find(x=>x!==r&&x.geo);
+    r.geo=Object.assign({l:"",b:"",gh:"",dreh:"0",s1:"aw",s2:"",s3:"",s4:"",boden:"kd",decke:"og"},prev?{gh:prev.geo.gh,dreh:prev.geo.dreh,boden:prev.geo.boden,decke:prev.geo.decke}:{}); }
+  return r.geo; }
+function geoBuild(r){ const g=r.geo, L=num(g.l), B=num(g.b), H=nz(g.gh,nz(r.h,2.5)); if(!(L>0&&B>0&&H>0)) return false;
+  const dirs=geoDirs(g), hs=dn(H,2), Ls=dn(L,2), Bs=dn(B,2), bt=[];
+  ["s1","s2","s3","s4"].forEach((k,i)=>{ const ri=dirs[i], len=dn(i%2?B:L,2);
+    if(g[k]==="aw") bt.push(newBt("aw",{bez:ri,ri,b:len,h:hs}));
+    else if(g[k]==="iw") bt.push(newBt("iw",{bez:"zu Nachbarraum "+ri,b:len,h:hs}));
+    else if(g[k]==="ub") bt.push(newBt("iw",{bez:"zu unbeheizt "+ri,b:len,h:hs,adj:"unbeheizt"})); });
+  // Boden und Decke mit Maßen statt nur Fläche, damit sie am Bauteil nachvollziehbar und korrigierbar bleiben
+  if(g.boden) bt.push(newBt(g.boden,{bez:g.boden==="dn"?"Boden zu Raum darunter":"Boden",b:Ls,h:Bs}));
+  if(g.decke) bt.push(newBt(g.decke,{bez:g.decke==="dn"?"Decke zu Raum darüber":"Decke",b:Ls,h:Bs,ri:g.decke==="da"?"horiz.":""}));
+  r.bt=bt; r.fl=dn(L*B,2); return true; }
+function geoInfo(r){ const g=r.geo, L=num(g.l), B=num(g.b);
+  if(!(L>0&&B>0)) return "Länge und Breite eintragen.";
+  const n=["s1","s2","s3","s4"].filter(k=>g[k]==="aw").length;
+  return `Grundfläche ${fmt(L*B,2)} m² · ${n} ${n===1?"Außenwand":"Außenwände"} · Wandhöhe ${fmt(nz(g.gh,nz(r.h,2.5)),2)} m`; }
+function newWE(p){ return {id:uid(),name:"WE "+(p.einheiten.length+1),lage:""} }
+// Wohneinheiten an die Anzahl unter „Gebäude“ angleichen (nie automatisch löschen)
+function ensureWE(p){ let ch=false; if(!Array.isArray(p.einheiten)){ p.einheiten=[]; ch=true; }
+  const n=Math.max(1,Math.min(50,Math.round(nz(p.gebaeude.we,1))));
+  while(p.einheiten.length<n){ p.einheiten.push(newWE(p)); ch=true; }
+  if(p.einheiten.length===1) p.raeume.forEach(r=>{ if(r.we!==p.einheiten[0].id){ r.we=p.einheiten[0].id; ch=true; } });
+  return ch; }
+const weOf=(p,r)=>(p.einheiten||[]).find(w=>w.id===r.we);
+const weName=w=>w?w.name+(w.lage?" ("+w.lage+")":""):"Ohne Zuordnung";
+const roomLabel=(p,r)=>((p.einheiten||[]).length>1?weName(weOf(p,r))+" · ":"")+r.name;
+// Räume je Wohneinheit; nicht zugeordnete Räume zuletzt
+function weGroups(p){ const g=p.einheiten.map(w=>({w,rs:p.raeume.filter(r=>r.we===w.id)}));
+  const rest=p.raeume.filter(r=>!weOf(p,r)); if(rest.length) g.push({w:null,rs:rest}); return g; }
+function newBt(typ,extra={}){ return Object.assign({id:uid(),typ,bez:"",ri:"",b:"",h:"",anz:"1",a:""},uPreset(typ,extra.adj||TYPES[typ].adj),{adj:TYPES[typ].adj,tn:"",in:""},extra) }
+
+/* ============ U-Werte nach Baualtersklasse ============ */
+// Pauschalwerte nicht nachträglich gedämmter Bauteile: Bekanntmachung der Regeln zur Datenaufnahme und
+// Datenverwendung im Wohngebäudebestand vom 8.10.2020 (BAnz AT 04.12.2020 B1), Tabelle 2 (opak) und 3 (Fenster).
+// null = „keine Angabe“ in der Bekanntmachung.
+const BAK=["bis 1918","1919–1948","1949–1957","1958–1968","1969–1978","1979–1983","1984–1994","1995–2001","ab 2002"];
+const BAK_BIS=[1918,1948,1957,1968,1978,1983,1994,2001];
+const bakIdx=j=>{const i=BAK_BIS.findIndex(g=>j<=g);return i<0?8:i};
+const _=null, all=v=>Array(9).fill(v);
+const UTAB={
+  aw:{zwo:{l:"zweischalig, ohne Dämmung",v:[1.3,1.3,1.3,1.4,1.0,0.8,0.6,0.5,0.4]},
+      zwm:{l:"zweischalig, mit Dämmung",v:[_,_,1.0,0.9,0.9,0.7,0.5,0.5,0.4]},
+      vz20:{l:"Vollziegel/Stein ≤ 20 cm",v:[2.8,2.8,2.8,_,_,_,_,_,_]},
+      vz30:{l:"Vollziegel/Stein 20–30 cm",v:[1.8,1.8,1.8,_,_,_,_,_,_]},
+      vz99:{l:"Vollziegel/Stein > 30 cm",v:[1.5,1.5,1.5,_,_,_,_,_,_]},
+      hlz:{l:"Hochlochziegel/Bims",v:[1.4,1.4,1.4,1.4,1.0,0.8,0.6,0.5,0.4]},
+      ms20:{l:"sonst. massiv ≤ 20 cm",v:[3.0,3.0,3.0,1.4,1.0,0.8,0.7,0.7,0.4]},
+      ms99:{l:"sonst. massiv > 20 cm",v:[2.2,2.2,2.2,1.4,1.0,0.8,0.6,0.5,0.4]},
+      mh:{l:"Holzrahmen/Massivholz",v:[0.5,0.5,0.5,0.5,0.5,0.5,0.4,0.4,0.3]},
+      fwl:{l:"Fachwerk, Lehm",v:[1.5,1.5,1.5,_,_,_,_,_,_]},
+      fwz:{l:"Fachwerk, Ziegel/Stein",v:[2.0,2.0,2.0,_,_,_,_,_,_]},
+      sh:{l:"sonst. Holzbau",v:[2.0,2.0,1.5,1.4,0.6,0.5,0.4,0.4,0.3]}},
+  da:{massiv:{l:"massiv",v:[2.1,2.1,2.1,1.3,1.3,0.6,0.4,0.3,0.2]},
+      holz:{l:"Holzkonstruktion",v:[2.6,1.4,1.4,1.4,0.8,0.7,0.5,0.3,0.2]}},
+  og:{massiv:{l:"massive Decke",v:[2.1,2.1,2.1,2.1,0.6,0.6,0.3,0.3,0.2]},
+      holz:{l:"Holzbalkendecke",v:[1.0,1.0,0.8,0.7,0.6,0.4,0.3,0.3,0.2]}},
+  kd:{beton:{l:"Stahlbeton massiv",v:[1.6,1.6,2.3,1.0,1.0,0.8,0.6,0.6,0.5]},
+      holz:{l:"Holzbalkendecke",v:[1.0,1.0,1.0,0.8,0.6,0.6,0.4,0.4,0.4]},
+      ziegel:{l:"Ziegel/Hohlstein",v:[1.2,1.2,1.5,1.0,1.0,0.8,0.6,0.6,0.5]}},
+  bp:{beton:{l:"Stahlbeton massiv",v:[1.6,1.6,2.3,1.2,1.2,0.8,0.6,0.6,0.5]},
+      ziegel:{l:"Ziegel oder Holz",v:[1.2,1.2,1.5,1.0,1.0,0.8,0.6,0.6,_]},
+      hohl:{l:"Holz über Hohlraum",v:[1.8,1.8,1.0,0.8,0.6,0.6,0.4,0.4,_]}},
+  // Fenster: Klassen bis 1978 · 1979–1983 · 1984–1994 · 1995–2001 · ab 2002 (Uw)
+  fe:{he:{l:"Holz, Einfachglas",v:[5.0,_,_,_,_]},
+      hz:{l:"Holz, 2 Scheiben/Kasten",v:[2.7,2.7,2.7,1.6,1.5]},
+      ku:{l:"Kunststoff, Isolierglas",v:[3.0,3.0,3.0,1.9,1.5]},
+      al:{l:"Alu/Stahl, Isolierglas",v:[4.3,4.3,3.2,1.9,1.5]}},
+  tu:{holz:{l:"Holz/Kunststoff",v:all(2.9)},
+      metall:{l:"Metall",v:all(4.0)}}
+};
+const UVOR_DEF={aw:"ms99",da:"holz",og:"massiv",kd:"beton",bp:"beton",fe:"ku",tu:"holz",feJahr:""};
+const jahrOk=v=>{const j=num(v);return j>=1800&&j<=2100?Math.round(j):null};
+// Sanierungsstand je opakem Bauteil (uvor.san.<k>): bj Baujahr Bauteil, d nachträgliche Dämmung cm, lam λ,
+// sj Sanierungsjahr, zust Zustand, art Dämmart (nur Dach)
+const SAN=[["aw","Außenwand"],["da","Dach / Dachschräge"],["og","Oberste Geschossdecke"],["kd","Kellerdecke"],["bp","Bodenplatte"]];
+const LAMBDA=[["0,040","Mineralwolle/EPS (0,040)"],["0,035","WLG 035 (0,035)"],["0,050","Holzfaser/Zellulose (0,050)"]];
+// Pauschal-U-Wert als Zahl oder null (kein Baujahr, keine Angabe, Bauteil nicht in der Tabelle).
+// raw=true: Ausgangszustand ohne nachträgliche Dämmung
+function uTab(p,k,raw=false){ const uv=Object.assign({},UVOR_DEF,p.uvor), row=UTAB[k]?.[uv[k]]; if(!row) return null;
+  const s=uv.san?.[k]||{}, bj=k==="fe"?uv.feJahr:s.bj;
+  const j=jahrOk(jahrOk(bj)?bj:p.gebaeude.baujahr); if(j==null) return null;
+  const i=bakIdx(j), u0=row.v[k==="fe"?Math.max(0,i-4):i], d=num(s.d);
+  if(raw||u0==null||!(d>0)) return u0;
+  // Bekanntmachung Abschnitt 3.3: U = 1 / (1/U0 + d/λ), λ ohne Angabe 0,040
+  const lam=num(s.lam)>0?num(s.lam):0.04; return Math.round(100/(1/u0+d/100/lam))/100; }
+function sanBlock(k,l){ const b=`uvor.san.${k}`;
+  return `<div class="sub-h">${esc(l)}</div><div class="grid">
+    ${fld("Baujahr Bauteil (falls abweichend)",b+".bj",{dec:true,ph:"wie Gebäude"})}
+    ${fld("Nachträgliche Dämmung",b+".d",{dec:true,unit:"cm",ph:"keine"})}
+    ${fld("Dämmstoff",b+".lam",{opts:LAMBDA})}
+    ${fld("Sanierungsjahr",b+".sj",{dec:true})}
+    ${k==="da"?fld("Dämmart",b+".art",{opts:["","Zwischensparren","Aufsparren","Untersparren","Flachdach","keine Dämmung"]}):""}
+    ${fld("Zustand",b+".zust",{opts:["","gut","mittel","sanierungsbedürftig"]})}
+  </div>`; }
+// Wände zu unbeheizten (Keller-)Räumen gelten nach der Bekanntmachung als Außenwand
+const uKey=(typ,adj)=>typ==="iw"&&adj==="unbeheizt"?"aw":typ;
+const fmtU=v=>v.toFixed(Number.isInteger(Math.round(v*100)/10)?1:2).replace(".",",");
+// U-Wert für ein neues oder umgestelltes Bauteil: Tabellenwert (uSrc "vor"), sonst Standardwert des Typs
+function uPreset(typ,adj,p=S.cur){ const v=p?uTab(p,uKey(typ,adj)):null; return v!=null?{u:fmtU(v),uSrc:"vor"}:{u:TYPES[typ].u,uSrc:""} }
+const isAutoU=b=>b.uSrc?b.uSrc!=="hand":b.u===TYPES[b.typ].u;
+// Vorbelegte U-Werte nachziehen; von Hand geänderte (uSrc "hand") bleiben. Alte Bauteile ohne uSrc gelten
+// nur dann als vorbelegt, wenn sie noch den Standardwert tragen.
+function applyUvor(p){ let n=0;
+  for(const r of p.raeume) for(const b of r.bt){ if(!isAutoU(b)) continue;
+    const v=uTab(p,uKey(b.typ,b.adj)); if(v==null) continue; b.uSrc="vor"; if(b.u!==fmtU(v)){ b.u=fmtU(v); n++; } }
+  return n; }
+
+function sample(){
+  const p=newProject();
+  Object.assign(p.gebaeude,{bez:"Beispiel · EFH Musterweg 12",auftraggeber:"Familie Muster (Beispieldaten)",strasse:"Musterweg 12",plz:"22111",ort:"Hamburg",typ:"Einfamilienhaus",baujahr:"1965",we:"1",geschosse:"2",keller:"unbeheizt",dg:"nicht ausgebaut",wfl:"128",sanierung:"Fenster 1992 getauscht",notiz:"Beispielprojekt zum Ausprobieren – kann gelöscht werden."});
+  Object.assign(p.anlage,{erz:"Gas-Niedertemperatur",hersteller:"Viessmann Vitola (Beispiel)",baujahr:"1996",leistung:"24",heizflaechen:"Heizkörper",vl:"70",rl:"55",abgleich:"nein",ww:"zentral mit Speicher",wwspeicher:"150",lueftung:"Fensterlüftung",v1j:"2023",v1m:"24800",v2j:"2024",v2m:"23100"});
+  const wz=newRoom(p); Object.assign(wz,{name:"Wohnzimmer",fl:"28",nutzung:"Wohnzimmer"});
+  const aw1=newBt("aw",{bez:"Süd",ri:"S",b:"6,00",h:"2,50"}), aw2=newBt("aw",{bez:"West",ri:"W",b:"4,60",h:"2,50"});
+  wz.bt=[aw1,newBt("fe",{bez:"Terrasse",ri:"S",b:"1,50",h:"1,40",anz:"2",in:aw1.id}),aw2,newBt("fe",{ri:"W",b:"1,20",h:"1,40",in:aw2.id}),newBt("kd",{a:"28"})];
+  const bad=newRoom(p); Object.assign(bad,{name:"Bad",nutzung:"Bad",ti:"24",fl:"7,5"});
+  const aw3=newBt("aw",{bez:"Nord",ri:"N",b:"2,50",h:"2,50"});
+  bad.bt=[aw3,newBt("fe",{ri:"N",b:"0,80",h:"1,00",in:aw3.id}),newBt("iw",{bez:"zum Flur",b:"3,00",h:"2,50",tn:"15"}),newBt("kd",{a:"7,5"})];
+  const sz=newRoom(p); Object.assign(sz,{name:"Schlafzimmer",geschoss:"OG",nutzung:"Schlafzimmer",fl:"16"});
+  const aw4=newBt("aw",{bez:"Ost",ri:"O",b:"4,00",h:"2,50"});
+  sz.bt=[aw4,newBt("fe",{ri:"O",b:"1,20",h:"1,30",in:aw4.id}),newBt("og",{a:"16"})];
+  p.raeume=[wz,bad,sz]; p.sample=true; return p;
+}
+
+/* ============ Heizlast (vereinfacht nach DIN EN 12831-1) ============ */
+function calc(p){
+  const te=nz(p.klima.te,-12), duwb=nz(p.klima.duwb,0.05), fu=nz(p.klima.fu,0.5), fe=nz(p.klima.fe,0.6);
+  const out={r:{},T:0,V:0,HL:0,A:0};
+  for(const r of p.raeume){
+    const ti=nz(r.ti,20), dT=ti-te, rr={b:{},T:0,V:0,HL:0,perm2:NaN};
+    const gross={};
+    for(const b of r.bt){ const a=num(b.a); gross[b.id]=( !isNaN(a)&&a>0 ? a : nz(b.b)*nz(b.h) ) * nz(b.anz,1); }
+    for(const b of r.bt){
+      let A=gross[b.id];
+      if(!TYPES[b.typ]?.open){ for(const o of r.bt){ if(o.in===b.id && TYPES[o.typ]?.open) A-=gross[o.id]; } }
+      A=Math.max(0,A);
+      let f=1, wb=duwb;
+      if(b.adj==="unbeheizt") f=fu;
+      else if(b.adj==="erdreich") f=fe;
+      else if(b.adj==="beheizt"){ const tn=num(b.tn); f = (isNaN(tn)||dT===0)?0:(ti-tn)/dT; wb=0; }
+      const U=nz(b.u), phi=A*(U+wb)*f*dT;
+      rr.b[b.id]={A,phi}; rr.T+=phi;
+    }
+    const vol=nz(r.fl)*nz(r.h,2.5);
+    rr.V=0.34*vol*nz(r.n,0.5)*dT;
+    rr.HL=rr.T+rr.V; rr.perm2=nz(r.fl)>0?rr.HL/nz(r.fl):NaN;
+    out.r[r.id]=rr; out.T+=rr.T; out.V+=rr.V; out.HL+=rr.HL; out.A+=nz(r.fl);
+  }
+  out.perm2=out.A>0?out.HL/out.A:NaN;
+  return out;
+}
+
+/* ============ Zustand ============ */
+const S={projects:[],cur:null,tab:"geb",room:null,saved:null,armed:null};
+let saveT=null;
+function touch(){ if(!S.cur) return; S.cur.updated=Date.now(); clearTimeout(saveT); saveT=setTimeout(async()=>{ const ok=await dbPut(S.cur); S.saved=ok?new Date():false; paintStatus(); },400); }
+function paintStatus(){ const el=$("#status"); if(!el) return;
+  if(!storageOk){ el.textContent="Nur im Arbeitsspeicher"; el.className="status warn"; return; }
+  el.className="status"; el.textContent = S.saved ? "Gespeichert "+S.saved.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) : "Lokal gespeichert"; }
+
+/* ============ Icons ============ */
+const I={
+  back:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  plus:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  cam:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  copy:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg>',
+  bt:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg>',
+  trash:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>'
+};
+
+/* ============ Feld-Bausteine ============ */
+function fld(label,path,o={}){ const v=getP(S.cur,path)??"";
+  const unit=o.unit?` <span class="unit">${esc(o.unit)}</span>`:"";
+  if(o.opts) return `<label class="f${o.wide?" wide":""}"><span>${esc(label)}${unit}</span><select class="in" data-bind="${path}">${o.opts.map(x=>{const [val,lab]=Array.isArray(x)?x:[x,x||"–"];return `<option value="${esc(val)}"${String(val)===String(v)?" selected":""}>${esc(lab)}</option>`}).join("")}</select></label>`;
+  if(o.area) return `<label class="f wide"><span>${esc(label)}</span><textarea class="in" data-bind="${path}">${esc(v)}</textarea></label>`;
+  return `<label class="f${o.wide?" wide":""}"><span>${esc(label)}${unit}</span><input class="in" data-bind="${path}" value="${esc(v)}"${o.dec?' inputmode="decimal"':""}${o.type?` type="${o.type}"`:""}${o.ph?` placeholder="${esc(o.ph)}"`:""}></label>`;
+}
+
+// Ja/Nein-Auswahl („–“ = noch nicht erfasst)
+const yn=(label,path)=>fld(label,path,{opts:[["","–"],["ja","ja"],["nein","nein"]]});
+// Gruppe von Checkboxen; jede speichert "ja" oder "" unter path.key
+function chks(label,path,items,o={}){ const v=getP(S.cur,path)||{};
+  return `<div class="f${o.wide===false?"":" wide"}"><span>${esc(label)}</span><div class="chks">${items.map(([k,l])=>`<label class="chk"><input type="checkbox" data-bind="${path}.${k}"${v[k]==="ja"?" checked":""}>${esc(l)}</label>`).join("")}</div></div>`; }
+
+/* ============ Plausibilität ============ */
+// Stufen: f = Fehler (Ergebnis sicher falsch), w = prüfen (wahrscheinlich Aufnahmefehler), i = Hinweis (auffällig)
+const PL_LVL={f:["Fehler","f"],w:["Prüfen","w"],i:["Hinweis","i"]};
+const grossA=b=>(num(b.a)>0?num(b.a):nz(b.b)*nz(b.h))*nz(b.anz,1);
+const btLabel=b=>TYPES[b.typ].l+(b.bez?" „"+b.bez+"“":b.ri?" "+b.ri:"");
+function plaus(p,c=calc(p)){ const L=[], add=(lvl,msg,r=null,b=null)=>L.push({lvl,msg,r,b}), ein=p.einheiten||[];
+  const hkAny=p.raeume.some(r=>(r.hk||[]).length); let sumFl=0;
+  for(const r of p.raeume){ const x=c.r[r.id], fl=num(r.fl), ti=num(r.ti), h=num(r.h); if(fl>0) sumFl+=fl;
+    if(!(fl>0)) add("f","Grundfläche fehlt – Lüftungswärmeverlust wird 0",r);
+    if(!r.bt.length) add("w","Keine Bauteile erfasst",r);
+    else if(r.bt.every(b=>b.adj==="beheizt")) add("w","Kein Außenbauteil – nur richtig bei innenliegendem Raum",r);
+    if(ti<10||ti>26) add("i",`Ungewöhnliche Raumtemperatur ${fmt(ti,0)} °C`,r);
+    if(h>0&&(h<1.8||h>4)) add("i",`Lichte Höhe ${fmt(h,2)} m ungewöhnlich`,r);
+    for(const b of r.bt){ const T=TYPES[b.typ], u=num(b.u), A=grossA(b);
+      if(!(u>0)) add("f",`${btLabel(b)}: U-Wert fehlt`,r,b);
+      else if(u<0.1||u>6) add("w",`${btLabel(b)}: U-Wert ${fmt(u,2)} W/m²K unplausibel`,r,b);
+      if(!(A>0)) add("w",`${btLabel(b)}: Fläche fehlt`,r,b);
+      if(b.adj==="beheizt"&&isNaN(num(b.tn))) add("w",`${btLabel(b)}: θ Nachbar fehlt – zählt mit 0 W`,r,b);
+      if(T.open){ const w=r.bt.find(o=>o.id===b.in);
+        if(!w){ if(r.bt.some(o=>!TYPES[o.typ].open&&["aw","da","iw"].includes(o.typ))) add("w",`${btLabel(b)}: keiner Wand zugeordnet – wird nicht abgezogen`,r,b); }
+        else if(w.ri&&b.ri&&w.ri!==b.ri) add("i",`${btLabel(b)}: Richtung ${b.ri}, Wand ${w.ri}`,r,b); }
+      else { const oa=r.bt.filter(o=>o.in===b.id&&TYPES[o.typ]?.open).reduce((s,o)=>s+grossA(o),0);
+        if(oa>A+1e-9&&A>0) add("f",`${btLabel(b)}: Fenster/Türen ${fmt(oa,2)} m² größer als die Wand ${fmt(A,2)} m²`,r,b); } }
+    if(fl>0) for(const [ty,lab] of [[["kd","bp"],"Boden"],[["og"],"Oberste Geschossdecke"]]){
+      const a=r.bt.filter(b=>ty.includes(b.typ)).reduce((s,b)=>s+grossA(b),0);
+      if(a>0&&Math.abs(a/fl-1)>0.2) add("i",`${lab} ${fmt(a,1)} m², Grundfläche ${fmt(fl,1)} m²`,r); }
+    if(fl>0&&x.HL/fl>250) add("w",`Sehr hohe Heizlast ${fmt(x.HL/fl,0)} W/m² – Flächen und U-Werte prüfen`,r);
+    if(hkAny&&x.HL>0&&!(r.hk||[]).length&&r.fbh!=="ja") add("i","Kein Heizkörper erfasst",r);
+    if(ein.length>1&&!weOf(p,r)) add("w","Keiner Wohneinheit zugeordnet",r); }
+  if(!jahrOk(p.gebaeude.baujahr)) add("i","Baujahr fehlt – U-Werte werden nicht nach Baualtersklasse vorbelegt");
+  const wfl=num(p.gebaeude.wfl);
+  if(!(wfl>0)) add("i","Wohnfläche fehlt – die Verbrauchs-Gegenprüfung kann nicht hochrechnen");
+  else if(sumFl>wfl*1.1) add("w",`Räume zusammen ${fmt(sumFl,1)} m², Wohnfläche nur ${fmt(wfl,1)} m²`);
+  if(!p.klima.teSrc&&p.klima.te==="-12") add("i","Norm-Außentemperatur steht noch auf dem Standardwert −12 °C");
+  const v=verbCheck(p,c); if(v&&v.phiR>0&&isFinite(v.abw)&&Math.abs(v.abw)>0.5) add("w",`Heizlast weicht ${v.abw>0?"+":""}${fmt(v.abw*100,0)} % vom Verbrauch ab – siehe Gegenprüfung`);
+  return L.sort((a,b)=>"fwi".indexOf(a.lvl)-"fwi".indexOf(b.lvl)); }
+// link: true = mit Raumname und „öffnen“ (Ergebnis), false = im Raum selbst, „zeigen“ nur bei Bauteil-Bezug
+function plausItem(x,link){ const [lab,cls]=PL_LVL[x.lvl], btn=x.r&&(link||x.b);
+  return `<li class="pl-${cls}"><span class="pl-tag">${lab}</span><span>${link&&x.r?`<b>${esc(roomLabel(S.cur,x.r))}</b>: `:""}${esc(x.msg)}</span>${btn?`<button class="btn small ghost" data-act="goroom" data-id="${x.r.id}"${x.b?` data-bt-id="${x.b.id}"`:""}>${link?"öffnen":"zeigen"}</button>`:""}</li>`; }
+function plausRoomHtml(r){ const L=plaus(S.cur).filter(x=>x.r===r); return L.length?`<ul class="pl-list">${L.map(x=>plausItem(x,false)).join("")}</ul>`:""; }
+function paintPlaus(){ const el=$("#plausroom"), r=S.room&&curRoom(); if(el&&r) el.innerHTML=plausRoomHtml(r); }
+
+/* ============ Ansichten ============ */
+function render(){ prClear(); const app=$("#app"); setTimeout(paintVer,0); if(S.cur&&ensureWE(S.cur)) touch(); if(S.cur&&!S.cur.uvor) S.cur.uvor=Object.assign({},UVOR_DEF); app.innerHTML = S.cur ? viewProject() : viewList(); paintStatus(); }
+
+function viewList(){
+  const items=[...S.projects].sort((a,b)=>b.updated-a.updated).map(p=>{ const c=calc(p);
+    return `<div class="pcard" data-act="open" data-id="${p.id}" role="button" tabindex="0">
+      <div class="row" style="justify-content:space-between"><h2>${esc(p.gebaeude.bez||"Ohne Namen")}</h2>${p.sample?'<span class="badge">Beispiel</span>':""}</div>
+      <div class="muted">${esc([p.gebaeude.strasse,[p.gebaeude.plz,p.gebaeude.ort].filter(Boolean).join(" ")].filter(Boolean).join(", ")||"Keine Adresse")}</div>
+      <div class="meta"><span>${p.raeume.length} Räume</span><span>${p.fotos.length} Fotos</span><span class="num" style="color:var(--amber)">${fmt(c.HL/1000,1)} kW</span><span>${new Date(p.updated).toLocaleDateString("de-DE")}</span></div>
+      <div class="row noprint"><button class="btn small danger${S.armed===p.id?" armed":""}" data-act="pdel" data-id="${p.id}">${S.armed===p.id?"Wirklich löschen":"Löschen"}</button></div>
+    </div>`}).join("");
+  return `<header class="top"><div class="wrap">${brandHtml()}<span id="status" class="status"></span></div></header>
+  <main class="wrap">
+    ${!storageOk?`<div class="banner">Der Gerätespeicher ist hier nicht verfügbar. Daten bleiben nur bis zum Schließen erhalten – bitte vorher als JSON sichern.</div>`:""}
+    <div class="row"><button class="btn primary" data-act="pnew">${I.plus}Neues Objekt</button>
+      <label class="btn filebtn">JSON importieren<input type="file" accept=".json,application/json" data-act="import" multiple></label></div>
+    ${items?`<div class="plist">${items}</div>`:`<div class="empty">Noch keine Objekte. Lege mit „Neues Objekt“ die erste Aufnahme an.</div>`}
+    <p class="muted ver"><button class="btn small ghost" data-act="bkedit">Briefkopf für Protokolle</button></p>
+    <p class="muted ver" id="ver">${verText()}</p>
+  </main>`;
+}
+
+function viewProject(){
+  const tabs=[["geb","Gebäude"],["raum","Räume"],["anl","Anlage"],["foto","Fotos"],["kunde","Kunde"],["erg","Ergebnis"]];
+  let body="";
+  if(S.tab==="geb") body=tabGeb(); else if(S.tab==="raum") body=S.room?tabRoom():tabRooms(); else if(S.tab==="anl") body=tabAnl(); else if(S.tab==="foto") body=tabFoto(); else if(S.tab==="kunde") body=tabKunde(); else body=tabErg();
+  return `<header class="top"><div class="wrap"><button class="btn ghost" data-act="home" aria-label="Zur Objektliste">${I.back}</button><h1 data-calc="title">${esc(S.cur.gebaeude.bez||"Ohne Namen")}</h1>${laserBtn()}<span id="status" class="status"></span></div>
+  <div class="wrap tabs" role="tablist">${tabs.map(([k,l])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-tab="${k}">${l}</button>`).join("")}</div></header>
+  <main class="wrap">${!storageOk?`<div class="banner">Gerätespeicher nicht verfügbar – Daten vor dem Schließen unter „Ergebnis“ als JSON sichern.</div>`:""}${body}</main>`;
+}
+
+function tabGeb(){
+  return `<section class="block"><h2>Objekt</h2><div class="grid">
+    ${fld("Bezeichnung","gebaeude.bez",{wide:true})}
+    ${fld("Auftraggeber","gebaeude.auftraggeber")}
+    ${fld("Aufnahmedatum","gebaeude.datum",{type:"date"})}
+    ${fld("Straße, Nr.","gebaeude.strasse")}
+    ${fld("PLZ","gebaeude.plz",{dec:true})}
+    ${fld("Ort","gebaeude.ort")}
+  </div></section>
+  <section class="block"><h2>Gebäude</h2><div class="grid">
+    ${fld("Gebäudetyp","gebaeude.typ",{opts:GTYP})}
+    ${fld("Baujahr","gebaeude.baujahr",{dec:true})}
+    ${fld("Wohneinheiten","gebaeude.we",{dec:true})}
+    ${fld("Vollgeschosse","gebaeude.geschosse",{dec:true})}
+    ${fld("Keller","gebaeude.keller",{opts:["","kein Keller","unbeheizt","teilbeheizt","beheizt"]})}
+    ${fld("Dachgeschoss","gebaeude.dg",{opts:["","Flachdach","nicht ausgebaut","ausgebaut, beheizt","teilausgebaut"]})}
+    ${fld("Wohnfläche","gebaeude.wfl",{dec:true,unit:"m²"})}
+    ${fld("Nutzfläche","gebaeude.nfl",{dec:true,unit:"m²"})}
+    ${fld("Gebäudevolumen (falls ableitbar)","gebaeude.vol",{dec:true,unit:"m³"})}
+    ${fld("Ausrichtung Hauptfassade","gebaeude.ausr",{opts:DIRS.slice(0,9).map(d=>[d,d||"–"])})}
+    ${yn("Denkmalschutz","gebaeude.denkmal")}
+    ${fld("Personen im Haushalt","gebaeude.personen",{dec:true})}
+    ${chks("Anbauten","gebaeude.anbau",[["wintergarten","Wintergarten"],["erker","Erker"],["vorbau","Vorbau"]])}
+    ${fld("Bisherige Sanierungen","gebaeude.sanierung",{area:true})}
+    ${fld("Notizen","gebaeude.notiz",{area:true})}
+  </div></section>
+  <section class="block"><div class="block-head"><h2>U-Werte nach Baualtersklasse</h2></div>
+    <div class="grid">
+      ${fld("Außenwand","uvor.aw",{opts:Object.entries(UTAB.aw).map(([k,x])=>[k,x.l])})}
+      ${fld("Dach / Dachschräge","uvor.da",{opts:Object.entries(UTAB.da).map(([k,x])=>[k,x.l])})}
+      ${fld("Oberste Geschossdecke","uvor.og",{opts:Object.entries(UTAB.og).map(([k,x])=>[k,x.l])})}
+      ${fld("Kellerdecke","uvor.kd",{opts:Object.entries(UTAB.kd).map(([k,x])=>[k,x.l])})}
+      ${fld("Bodenplatte","uvor.bp",{opts:Object.entries(UTAB.bp).map(([k,x])=>[k,x.l])})}
+      ${fld("Fenster","uvor.fe",{opts:Object.entries(UTAB.fe).map(([k,x])=>[k,x.l])})}
+      ${fld("Fenster eingebaut (falls getauscht)","uvor.feJahr",{dec:true,ph:"wie Baujahr"})}
+      ${fld("Verglasung (Ist)","uvor.feGlas",{opts:["","Einfach","Doppelverglasung","Wärmeschutzverglasung","Dreifachverglasung"]})}
+      ${fld("Außentür","uvor.tu",{opts:Object.entries(UTAB.tu).map(([k,x])=>[k,x.l])})}
+      ${fld("Baujahr Außentüren","uvor.tuJahr",{dec:true})}
+      ${yn("Außentüren gedämmt","uvor.tuGed")}
+    </div>
+    <div id="uvortab" style="margin-top:12px">${uvorTable(S.cur)}</div>
+    <p class="note">Pauschalwerte nach der Bekanntmachung der Regeln zur Datenaufnahme im Wohngebäudebestand vom 8.10.2020 (BAnz AT 04.12.2020 B1, Tab. 2 und 3); nachträgliche Dämmung nach Abschnitt 3.3 umgerechnet. Sie gelten für alle Bauteile, deren U-Wert Sie nicht selbst geändert haben, auch für später angelegte. Einzelne Bauteile im Raum korrigieren – sie werden mit ✎ markiert und danach nicht mehr überschrieben.</p></section>
+  <section class="block"><h2>Sanierungsstand der Hülle</h2>${SAN.map(([k,l])=>sanBlock(k,l)).join("")}</section>
+  <section class="block"><div class="block-head"><h2>Randbedingungen Heizlast</h2></div><div class="grid">
+    ${fld("Norm-Außentemperatur θe","klima.te",{dec:true,unit:"°C"})}
+    ${fld("Wärmebrückenzuschlag ΔU_WB","klima.duwb",{dec:true,unit:"W/m²K"})}
+    ${fld("Faktor unbeheizter Raum","klima.fu",{dec:true})}
+    ${fld("Faktor Erdreich","klima.fe",{dec:true})}
+    ${yn("Wärmebrücken-Details dokumentiert (Balkone, Laibungen, Ecken)","klima.wbDoku")}
+    ${yn("Wärmebrückennachweis vorhanden","klima.wbNachweis")}
+    ${yn("Blower-Door-Test vorhanden","klima.blower")}
+    ${fld("n50-Wert","klima.n50",{dec:true,unit:"1/h"})}
+  </div><div class="note plzhint" id="plzhint">${plzHint(S.cur)}</div>
+  <p class="note">θe nach DIN/TS 12831-1 für die PLZ des Objekts. Die Faktoren sind pauschale Näherungen für die Vor-Ort-Abschätzung; die verbindliche Berechnung erfolgt in Hottgenroth.</p>
+  <div class="row noprint"><span class="muted" style="font-size:.85rem">PLZ-Tabelle auf diesem Gerät: <span id="plzcount">${PLZ.size}</span> Einträge</span>
+    <label class="btn small filebtn">CSV einspielen<input type="file" accept=".csv,.txt,text/csv,text/plain" data-act="plzimport"></label>
+    <button class="btn small" data-act="plzexport">CSV exportieren</button></div></section>`;
+}
+
+function uvorTable(p){ const j=jahrOk(p.gebaeude.baujahr);
+  if(j==null) return `<p class="muted" style="margin:0">Baujahr oben eintragen – dann werden die U-Werte aller Bauteile vorbelegt.</p>`;
+  const uv=Object.assign({},UVOR_DEF,p.uvor), fj=jahrOk(uv.feJahr);
+  let auto=0, hand=0; p.raeume.forEach(r=>r.bt.forEach(b=>{ if(!UTAB[uKey(b.typ,b.adj)]) return; isAutoU(b)?auto++:hand++; }));
+  const rows=["aw","da","og","kd","bp","fe","tu"].map(k=>{ const v=uTab(p,k), v0=uTab(p,k,true), s=uv.san?.[k]||{}, bj=k==="fe"?fj:jahrOk(s.bj), d=num(s.d);
+    return `<tr><td>${TYPES[k].l}${bj?` <span class="muted">(${bj})</span>`:""}</td><td class="n">${v0==null?"keine Angabe":fmt(v0,1)}</td><td class="n">${d>0&&v0!=null?fmt(d,0)+" cm":""}</td><td class="n${v==null?"":" hl"}">${v==null?"–":fmtU(v)}</td></tr>`}).join("");
+  return `<div class="muted" style="font-size:.85rem;margin-bottom:6px">Baualtersklasse <b>${BAK[bakIdx(j)]}</b> · vorbelegt: ${auto} Bauteile${hand?` · eigene Werte: ${hand} (bleiben)`:""}</div>
+    <div class="tw"><table><thead><tr><th>Bauteil</th><th class="n">U Baualter</th><th class="n">Dämmung</th><th class="n">U angesetzt</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${rows.includes("keine Angabe")?`<p class="note" style="margin-top:8px">„keine Angabe“: Diese Konstruktion gibt es für die Baualtersklasse in der Bekanntmachung nicht – andere Konstruktion wählen oder U-Wert im Raum eintragen.</p>`:""}`; }
+function plzHint(p){ const k=String(p.gebaeude.plz||"").trim(), e=PLZ.get(k), te=num(p.klima.te);
+  const link=`<a href="${KLIMAKARTE}" target="_blank" rel="noopener">BWP-Klimakarte</a>`;
+  if(!plzOk(k)) return `PLZ oben unter „Objekt“ eintragen – dann wird θe aus der PLZ-Tabelle gesetzt.`;
+  if(!e) return `Für PLZ ${esc(k)} ist noch kein Wert gespeichert. θe in der ${link} ablesen, oben eintragen und merken.
+    <div class="row">${p.klima.teSrc==="hand"&&!isNaN(te)?`<button class="btn small" data-act="plzsave">θe ${fmt(te,1)} °C für PLZ ${esc(k)} merken</button>`:`<button class="btn small" disabled>Erst θe eintragen, dann merken</button>`}</div>`;
+  const ort=e.ort?` ${esc(e.ort)}`:"", tab=fmt(num(e.te),1);
+  if(num(e.te)===te) return `θe aus der PLZ-Tabelle: ${esc(k)}${ort} → ${tab} °C${e.src==="import"?" (Import)":" (vor Ort gemerkt)"}.`;
+  return `Die PLZ-Tabelle hat für ${esc(k)}${ort} ${tab} °C, eingetragen sind ${fmt(te,1)} °C.
+    <div class="row"><button class="btn small" data-act="plzuse">${tab} °C übernehmen</button>${isNaN(te)?"":`<button class="btn small" data-act="plzsave">Tabelle auf ${fmt(te,1)} °C ändern</button>`}</div>`; }
+function paintPlz(){ const el=$("#plzhint"); if(el) el.innerHTML=plzHint(S.cur); const n=$("#plzcount"); if(n) n.textContent=PLZ.size; }
+
+function tabRooms(){
+  const p=S.cur, c=calc(p), max=Math.max(1,...p.raeume.map(r=>c.r[r.id].HL)), multi=p.einheiten.length>1;
+  const PL=plaus(p,c), plN=r=>PL.filter(x=>x.r===r&&x.lvl!=="i").length;
+  const card=r=>{const x=c.r[r.id], n=plN(r);return `<button class="rcard" data-act="room" data-id="${r.id}">
+      <div><div class="nm">${esc(r.name)}${n?` <span class="pl-badge" title="${n} Punkte prüfen">⚠ ${n}</span>`:""}</div><div class="muted" style="font-size:.85rem">${esc(r.geschoss)} · ${fmt(nz(r.fl),1)} m² · ${fmt(nz(r.ti,20),0)} °C · ${r.bt.length} Bauteile</div></div>
+      <div class="val">${fmt(x.HL,0)} W<div class="muted" style="font-size:.78rem">${fmt(x.perm2,0)} W/m²</div></div>
+      <div class="bar"><i style="width:${Math.max(0,x.HL)/max*100}%"></i></div></button>`};
+  const list=rs=>rs.length?`<div class="rooms">${rs.map(card).join("")}</div>`:`<div class="empty">Noch keine Räume erfasst.</div>`;
+  const sum=`<div class="sum"><div><span class="label">Heizlast gesamt</span><b>${fmt(c.HL/1000,2)} kW</b></div><div><span class="label">Fläche</span><b>${fmt(c.A,1)} m²</b></div><div><span class="label">spezifisch</span><b>${fmt(c.perm2,0)} W/m²</b></div>${multi?`<div><span class="label">Wohneinheiten</span><b>${p.einheiten.length}</b></div>`:""}</div>`;
+  const addWE=`<div class="row noprint"><button class="btn" data-act="wenew">${I.plus}Wohneinheit</button>${multi?"":`<span class="muted" style="font-size:.85rem">Bei mehreren Wohnungen zuerst die Wohneinheiten anlegen und benennen, dann die Räume darin erfassen.</span>`}</div>`;
+  if(!multi) return sum+`<section class="block"><div class="block-head"><h2>Räume</h2><button class="btn primary" data-act="rnew" data-we="${p.einheiten[0].id}">${I.plus}Raum</button></div>${list(p.raeume)}</section>`+addWE;
+  const n=Math.round(nz(p.gebaeude.we,1));
+  const warn=p.einheiten.length>n?`<div class="banner">Unter „Gebäude“ sind ${n} Wohneinheiten angegeben, angelegt sind ${p.einheiten.length}. Nicht benötigte, leere Wohneinheiten hier löschen.</div>`:"";
+  return sum+warn+weGroups(p).map(({w,rs})=>{ const hl=rs.reduce((s,r)=>s+c.r[r.id].HL,0), A=rs.reduce((s,r)=>s+nz(r.fl),0);
+    if(!w) return `<section class="block"><div class="block-head"><h2>Ohne Zuordnung</h2><span class="muted" style="font-size:.85rem">Raum öffnen und unter „Wohneinheit“ zuordnen.</span></div>${list(rs)}</section>`;
+    const i=p.einheiten.indexOf(w);
+    return `<section class="block" data-we="${w.id}"><div class="we-head">
+        ${fld("Wohneinheit",`einheiten.${i}.name`)}
+        ${fld("Lage / Bewohner",`einheiten.${i}.lage`,{ph:"z. B. EG links, Mieter Müller"})}
+        <span class="tot">${fmt(hl/1000,2)} kW · ${fmt(A,1)} m²</span></div>
+      ${list(rs)}
+      <div class="row noprint"><button class="btn primary" data-act="rnew" data-we="${w.id}">${I.plus}Raum in ${esc(w.name)}</button>${rs.length?"":`<button class="btn small ghost danger" data-act="wedel" data-we="${w.id}">${I.trash}Wohneinheit entfernen</button>`}</div></section>`;
+  }).join("")+addWE;
+}
+
+function btRow(r,b,c){
+  const T=TYPES[b.typ], open=!!T.open, x=c.r[r.id].b[b.id]||{A:0,phi:0};
+  const walls=r.bt.filter(o=>!TYPES[o.typ].open&&["aw","da","iw"].includes(o.typ));
+  return `<div class="bt${open?" opening":""}" data-bt="${b.id}">
+    <div class="bt-top">
+      <select class="in" data-bf="typ" aria-label="Bauteiltyp">${Object.entries(TYPES).map(([k,t])=>`<option value="${k}"${k===b.typ?" selected":""}>${t.l}</option>`).join("")}</select>
+      <input class="in bez" data-bf="bez" value="${esc(b.bez)}" placeholder="Bezeichnung (optional)" aria-label="Bezeichnung">
+      <select class="in" data-bf="ri" aria-label="Ausrichtung" style="min-width:90px">${DIRS.map(d=>`<option value="${d}"${d===b.ri?" selected":""}>${d||"Richtung"}</option>`).join("")}</select>
+    </div>
+    <div class="bt-fields">
+      <label class="f"><span>Breite <span class="unit">m</span></span><input class="in" inputmode="decimal" data-bf="b" value="${esc(b.b)}"></label>
+      <label class="f"><span>Höhe/Länge <span class="unit">m</span></span><input class="in" inputmode="decimal" data-bf="h" value="${esc(b.h)}"></label>
+      <label class="f"><span>oder Fläche <span class="unit">m²</span></span><input class="in" inputmode="decimal" data-bf="a" value="${esc(b.a)}"></label>
+      <label class="f"><span>Anzahl</span><input class="in" inputmode="decimal" data-bf="anz" value="${esc(b.anz)}"></label>
+      <label class="f"><span>U-Wert <span class="unit">W/m²K</span>${b.uSrc==="hand"?' <span class="unit" title="eigener Wert – wird von der Vorbelegung nicht überschrieben">✎</span>':""}</span><input class="in" inputmode="decimal" list="u-${b.typ}" data-bf="u" value="${esc(b.u)}"></label>
+      <label class="f w2"><span>grenzt an</span><select class="in" data-bf="adj">${Object.entries(ADJ).map(([k,l])=>`<option value="${k}"${k===b.adj?" selected":""}>${l}</option>`).join("")}</select></label>
+      ${b.adj==="beheizt"?`<label class="f"><span>θ Nachbar <span class="unit">°C</span></span><input class="in" inputmode="decimal" data-bf="tn" value="${esc(b.tn)}"></label>`:""}
+      ${open?`<label class="f w2"><span>abziehen von</span><select class="in" data-bf="in"><option value="">– nicht abziehen –</option>${walls.map(w=>`<option value="${w.id}"${w.id===b.in?" selected":""}>${esc(TYPES[w.typ].l+(w.bez?" "+w.bez:w.ri?" "+w.ri:""))}</option>`).join("")}</select></label>`:""}
+    </div>
+    <div class="bt-res"><span>A${open?"":" netto"} <output data-calc="b.${r.id}.${b.id}.A">${fmt(x.A,2)}</output> m²</span><span class="phi">Φ <output data-calc="b.${r.id}.${b.id}.phi">${fmt(x.phi,0)}</output> W</span><span class="sp"></span>
+      ${b.typ==="aw"?`<button class="btn small" data-act="btopen" data-typ="fe">${I.plus}Fenster</button><button class="btn small" data-act="btopen" data-typ="tu">${I.plus}Tür</button>`:b.typ==="da"?`<button class="btn small" data-act="btopen" data-typ="fe">${I.plus}Dachfenster</button>`:""}
+      <button class="btn small ghost" data-act="btdup">Duplizieren</button><button class="btn small ghost danger" data-act="btdel" aria-label="Bauteil löschen">${I.trash}</button></div>
+  </div>`;
+}
+
+function tabRoom(){
+  const r=S.cur.raeume.find(x=>x.id===S.room); if(!r){S.room=null;return tabRooms();}
+  const c=calc(S.cur), x=c.r[r.id], idx=S.cur.raeume.indexOf(r);
+  // Öffnungen direkt unter ihrer Wand anzeigen
+  const ordered=[]; const used=new Set();
+  for(const b of r.bt){ if(TYPES[b.typ].open && b.in && r.bt.some(w=>w.id===b.in)) continue; ordered.push(b); used.add(b.id);
+    for(const o of r.bt) if(TYPES[o.typ].open && o.in===b.id){ordered.push(o);used.add(o.id)} }
+  for(const b of r.bt) if(!used.has(b.id)) ordered.push(b);
+  const rp=k=>`raeume.${idx}.${k}`;
+  const photos=S.cur.fotos.filter(f=>f.ref===r.id);
+  return `<div class="row"><button class="btn small" data-act="rback">${I.back}Alle Räume</button><span class="sp" style="flex:1"></span>
+    <button class="btn small" data-act="rdup">Raum duplizieren</button><button class="btn small danger${S.armed===r.id?" armed":""}" data-act="rdel">${S.armed===r.id?"Wirklich löschen":"Raum löschen"}</button></div>
+  <div class="sum"><div><span class="label">Transmission W</span><b data-calc="r.${r.id}.T">${fmt(x.T,0)}</b></div><div><span class="label">Lüftung W</span><b data-calc="r.${r.id}.V">${fmt(x.V,0)}</b></div><div><span class="label">Raumheizlast W</span><b data-calc="r.${r.id}.HL">${fmt(x.HL,0)}</b></div><div><span class="label">W/m²</span><b data-calc="r.${r.id}.perm2">${fmt(x.perm2,0)}</b></div></div>
+  <div id="plausroom">${plausRoomHtml(r)}</div>
+  <section class="block"><h2>Raum</h2><div class="grid">
+    ${S.cur.einheiten.length>1?fld("Wohneinheit",rp("we"),{opts:[["","– ohne Zuordnung –"],...S.cur.einheiten.map(w=>[w.id,weName(w)])]}):""}
+    ${fld("Raumname",rp("name"))}
+    ${fld("Geschoss",rp("geschoss"),{opts:["KG","EG","OG","1. OG","2. OG","DG","Spitzboden"]})}
+    <label class="f"><span>Nutzung</span><select class="in" data-bind="${rp("nutzung")}" data-nutz>${NUTZ.map(([n])=>`<option${n===r.nutzung?" selected":""}>${n}</option>`).join("")}</select></label>
+    ${fld("Norm-Innentemp. θint",rp("ti"),{dec:true,unit:"°C"})}
+    ${fld("Grundfläche",rp("fl"),{dec:true,unit:"m²"})}
+    ${fld("Lichte Raumhöhe",rp("h"),{dec:true,unit:"m"})}
+    ${fld("Luftwechsel n",rp("n"),{dec:true,unit:"1/h"})}
+    ${fld("Notizen zum Raum",rp("notiz"),{area:true})}
+  </div></section>
+  ${geoSection(r,idx)}
+  <section class="block"><div class="block-head"><h2>Bauteile</h2><span class="muted" style="font-size:.85rem">Fenster und Türen werden von der gewählten Wand abgezogen.</span></div>
+    <div class="bts">${ordered.map(b=>btRow(r,b,c)).join("")||`<div class="empty">Noch keine Bauteile. Starte mit einer Außenwand.</div>`}</div>
+    <div class="addbar">${["aw","fe","tu","iw","da","og","kd","bp","dn"].map(t=>`<button class="btn small" data-act="btnew" data-typ="${t}">${I.plus}${TYPES[t].l}</button>`).join("")}</div>
+  </section>
+  ${hkSection(r,idx,x.HL)}
+  <section class="block"><div class="block-head"><h2>Fotos zum Raum</h2><label class="btn filebtn small">${I.cam}Foto aufnehmen<input type="file" accept="image/*" capture="environment" multiple data-act="photo" data-ref="${r.id}"></label></div>
+    ${photos.length?`<div class="photos">${photos.map(photoCard).join("")}</div>`:`<p class="muted" style="margin:0">Noch keine Fotos zu diesem Raum.</p>`}</section>`;
+}
+
+function hkSection(r,idx,phi){ const hk=r.hk||[];
+  return `<section class="block"><div class="block-head"><h2>Heizkörper</h2><span class="muted" style="font-size:.85rem">Normleistung vom Typenschild – bei Flachheizkörpern sonst aus Typ und Maßen geschätzt.</span></div>
+    <div class="bts">${hk.map(h=>hkRow(r,h)).join("")||`<div class="empty">Noch keine Heizkörper erfasst.</div>`}</div>
+    <div class="addbar"><button class="btn small" data-act="hknew">${I.plus}Heizkörper</button>
+      <label class="chk"><input type="checkbox" data-bind="raeume.${idx}.fbh"${r.fbh==="ja"?" checked":""}>Fußbodenheizung in diesem Raum</label></div>
+    <div class="note plzhint" id="hksum" style="margin-top:12px">${hkSum(r,phi)}</div></section>`; }
+function hkSum(r,phi){ const p=S.cur, tv=wpZiel(p), sp=wpSpr(p), w=wpRooms(p,calc(p)).find(x=>x.r===r);
+  if(!(phi>0)) return "Keine Heizlast – erst Bauteile erfassen.";
+  if(w.st==="fbh") return "Fußbodenheizung: wird für die Vorlauftemperatur nicht berechnet.";
+  if(w.st==="ohne") return `Raumheizlast ${fmt(phi,0)} W – noch kein Heizkörper erfasst.`;
+  if(w.st==="unvollst") return `Bei mindestens einem Heizkörper fehlt die Leistung (Maße oder Normleistung eintragen).`;
+  const vl=isFinite(w.vl)?fmt(Math.ceil(w.vl),0)+" °C":"über 90 °C";
+  return `Raumheizlast <b>${fmt(phi,0)} W</b> · Heizkörper bei ${fmt(tv,0)}/${fmt(tv-sp,0)} °C: <b>${fmt(w.qz,0)} W</b> (${fmt(w.deck*100,0)} %) · nötige Vorlauftemperatur <b>${vl}</b>`+
+    (w.st==="tausch"?`<br>Für ${fmt(tv,0)} °C nötig: Heizkörper mit zusammen ca. <b>${fmt(Math.ceil(w.need/50)*50,0)} W</b> Normleistung (75/65/20), vorhanden ${fmt(w.qn,0)} W.`:""); }
+function hkResTxt(r,h){ const N=hkNorm(h), p=S.cur, tv=wpZiel(p), sp=wpSpr(p);
+  if(!(N.q>0)) return h.typ==="glied"?"Glieder und Leistung je Glied oder Normleistung eintragen":isFlach(h.typ)?"Länge und Bauhöhe (300–900 mm) oder Normleistung eintragen":"Normleistung eintragen";
+  return `Qn <output>${fmt(N.q,0)}</output> W${N.src==="tabelle"?" (geschätzt)":""} · n ${fmt(N.n,2)} · bei ${fmt(tv,0)}/${fmt(tv-sp,0)} °C <output>${fmt(hkQ(h,tv,tv-sp,nz(r.ti,20)),0)}</output> W`; }
+function hkRow(r,h){ const N=hkNorm(h), tab=hkTab(h.typ,num(h.h)), f=(lab,k,o={})=>`<label class="f${o.w2?" w2":""}"><span>${lab}${o.unit?` <span class="unit">${o.unit}</span>`:""}</span>${o.opts
+    ?`<select class="in" data-hf="${k}">${o.opts.map(([v,l])=>`<option value="${v}"${String(h[k]??"")===v?" selected":""}>${esc(l)}</option>`).join("")}</select>`
+    :`<input class="in" inputmode="decimal" data-hf="${k}" value="${esc(h[k]??"")}"${o.ph?` placeholder="${esc(o.ph)}"`:""}>`}</label>`;
+  return `<div class="bt" data-hk="${h.id}"><div class="bt-top">
+      <select class="in" data-hf="typ" aria-label="Heizkörpertyp">${HK_TYP.map(([k,l])=>`<option value="${k}"${k===h.typ?" selected":""}>${l}</option>`).join("")}</select>
+      <input class="in bez" data-hf="bez" value="${esc(h.bez)}" placeholder="Lage, z. B. unter Fenster Süd" aria-label="Bezeichnung"></div>
+    <div class="bt-fields">
+      ${f("Länge","l",{unit:"mm"})}${f("Bauhöhe","h",{unit:"mm"})}
+      ${h.typ==="glied"?f("Glieder","anz")+f("Leistung je Glied","qg",{unit:"W"}):""}
+      ${f("Normleistung","qn",{unit:"W",ph:N.src==="tabelle"?"≈ "+fmt(N.q,0):"Typenschild"})}
+      ${f("Angabe bezogen auf","norm",{w2:true,opts:[["75","75/65/20 °C (EN 442)"],["90","90/70/20 °C (alt, DIN 4703)"]]})}
+      ${f("Exponent n","n",{ph:fmt(tab?tab.n:1.3,2)})}
+    </div>
+    <div class="bt-res"><span data-hkres>${hkResTxt(r,h)}</span><span class="sp"></span>
+      <button class="btn small ghost" data-act="hkdup">Duplizieren</button><button class="btn small ghost danger" data-act="hkdel" aria-label="Heizkörper löschen">${I.trash}</button></div></div>`; }
+function paintHk(){ const r=S.room&&curRoom(); if(!r) return; const c=calc(S.cur);
+  document.querySelectorAll("[data-hk]").forEach(el=>{ const h=(r.hk||[]).find(x=>x.id===el.dataset.hk); const o=el.querySelector("[data-hkres]"); if(h&&o) o.innerHTML=hkResTxt(r,h); });
+  const s=$("#hksum"); if(s) s.innerHTML=hkSum(r,c.r[r.id].HL); }
+
+function geoSection(r,idx){ const g=geoOf(S.cur,r), gp=k=>`raeume.${idx}.geo.${k}`, d=geoDirs(g), armed=S.armed===r.id+":geo";
+  return `<details class="block geo noprint"${!r.bt.length||S.geoOpen?" open":""}><summary><h2>Raum aus Maßen</h2><span class="muted" style="font-size:.85rem;margin-left:auto">Wände, Boden und Decke automatisch anlegen</span></summary>
+    <div class="grid">
+      ${fld(`Länge (Seiten ${d[0]}/${d[2]})`,gp("l"),{dec:true,unit:"m"})}
+      ${fld(`Breite (Seiten ${d[1]}/${d[3]})`,gp("b"),{dec:true,unit:"m"})}
+      ${fld("Geschosshöhe (Wandhöhe)",gp("gh"),{dec:true,unit:"m",ph:"wie lichte Höhe"})}
+      ${fld("Ausrichtung",gp("dreh"),{opts:[["0","Seiten N · O · S · W"],["45","Seiten NO · SO · SW · NW"]]})}
+    </div>
+    <div class="grid">${["s1","s2","s3","s4"].map((k,i)=>fld(`Seite ${d[i]} (${i%2?"Breite":"Länge"})`,gp(k),{opts:GEO_SIDE})).join("")}</div>
+    <div class="grid">${fld("Boden",gp("boden"),{opts:GEO_BODEN})}${fld("Decke",gp("decke"),{opts:GEO_DECKE})}</div>
+    <div class="row" style="margin-top:12px"><button class="btn ${r.bt.length?"danger":"primary"}${armed?" armed":""}" data-act="geogen">${r.bt.length?(armed?"Wirklich alle "+r.bt.length+" Bauteile ersetzen":"Bauteile neu anlegen (ersetzt "+r.bt.length+")"):"Bauteile anlegen"}</button>
+      <span class="muted" id="geoinfo" style="font-size:.85rem">${geoInfo(r)}</span></div>
+    <p class="note">Danach Fenster und Türen ergänzen – sie werden von der zuletzt angelegten Außenwand abgezogen und lassen sich umhängen. Bei Innenwänden θ Nachbar eintragen.</p>
+  </details>`; }
+
+function tabAnl(){
+  const v=(j,m,e)=>`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">${fld("Jahr","anlage."+j,{dec:true})}${fld("Verbrauch","anlage."+m,{dec:true})}${fld("Einheit","anlage."+e,{opts:["kWh","m³","l","kg","Rm"]})}</div>`;
+  return `<section class="block"><h2>Wärmeerzeuger</h2><div class="grid">
+    ${fld("Art","anlage.erz",{opts:ERZ})}
+    ${fld("Hersteller / Typ","anlage.hersteller")}
+    ${fld("Baujahr","anlage.baujahr",{dec:true})}
+    ${fld("Nennleistung","anlage.leistung",{dec:true,unit:"kW"})}
+    ${fld("Energieträger","anlage.traeger",{opts:["","Erdgas","Heizöl","Strom","Fernwärme","Holz / Pellets","Flüssiggas","Sonstiges"]})}
+  </div></section>
+  <section class="block"><h2>Verteilung und Übergabe</h2><div class="grid">
+    ${fld("Heizflächen","anlage.heizflaechen",{opts:["","Heizkörper","Fußbodenheizung","Heizkörper + Fußbodenheizung","Konvektoren"]})}
+    ${fld("Vorlauf Auslegung","anlage.vl",{dec:true,unit:"°C"})}
+    ${fld("Rücklauf Auslegung","anlage.rl",{dec:true,unit:"°C"})}
+    ${fld("Hydraulischer Abgleich","anlage.abgleich",{opts:["","ja","nein","unbekannt"]})}
+    ${yn("Rohrleitungen gedämmt","anlage.rohrGed")}
+    ${fld("Verlegung Rohrleitungen","anlage.rohrLage",{opts:["","beheizter Bereich","unbeheizter Bereich","gemischt"]})}
+    ${yn("Pufferspeicher","anlage.puffer")}
+    ${fld("Pufferspeicher-Größe","anlage.pufferL",{dec:true,unit:"l"})}
+    ${chks("Regelung","anlage.regel",[["einzel","Einzelraumregelung"],["at","Außentemperaturführung"],["nacht","Nachtabsenkung"],["keine","keine"]])}
+  </div></section>
+  <section class="block"><h2>Warmwasser und Lüftung</h2><div class="grid">
+    ${fld("Warmwasser","anlage.ww",{opts:["","zentral mit Speicher","zentral Durchlauf (Kombitherme)","dezentral elektrisch","Wärmepumpe","Solarthermie-Unterstützung"]})}
+    ${fld("Speichervolumen","anlage.wwspeicher",{dec:true,unit:"l"})}
+    ${yn("Zirkulationsleitung","anlage.zirk")}
+    ${yn("Zirkulation gedämmt","anlage.zirkGed")}
+    ${fld("Lüftung","anlage.lueftung",{opts:["","Fensterlüftung","Abluftanlage","Zu-/Abluftanlage ohne WRG","Lüftung mit WRG","dezentrale Lüfter"]})}
+    ${fld("Baujahr Lüftungsanlage","anlage.lueftBj",{dec:true})}
+    ${fld("Wartungszustand Lüftung","anlage.lueftZust",{opts:["","gut","mittel","schlecht"]})}
+  </div><p class="note">Blower-Door-Test und n50-Wert stehen im Reiter „Gebäude“ unter „Randbedingungen Heizlast“.</p></section>
+  <section class="block"><h2>Erneuerbare Energien</h2><div class="grid">
+    ${yn("Photovoltaik","anlage.pv")}
+    ${fld("PV-Leistung","anlage.pvKwp",{dec:true,unit:"kWp"})}
+    ${fld("PV-Baujahr","anlage.pvBj",{dec:true})}
+    ${fld("PV-Ausrichtung","anlage.pvAusr",{opts:DIRS.slice(0,9).map(d=>[d,d||"–"])})}
+    ${yn("Batteriespeicher","anlage.batt")}
+    ${yn("Solarthermie","anlage.st")}
+    ${fld("Kollektorfläche","anlage.stFl",{dec:true,unit:"m²"})}
+  </div><p class="note">Wärmepumpen-Typ unter „Wärmeerzeuger → Art“.</p></section>
+  <section class="block"><h2>Verbräuche</h2>${v("v1j","v1m","v1e")}${v("v2j","v2m","v2e")}${v("v3j","v3m","v3e")}
+    <div class="grid" style="margin-top:12px">
+      ${yn("Warmwasseranteil separat ausgewiesen","anlage.wwSep")}
+      ${yn("Zählerstände abgelesen","anlage.zaehler")}
+      ${fld("Leerstandszeiten im Zeitraum","anlage.leerstand",{ph:"z. B. 3 Monate 2023"})}
+    </div><p class="note">Die Gegenprüfung der Heizlast über diese Verbräuche steht im Reiter „Ergebnis“.</p></section>
+  <section class="block"><h2>Notizen Anlage</h2><div class="grid">${fld("Notizen","anlage.notiz",{area:true})}</div></section>`;
+}
+
+// Foto-Checkliste: Kategorie → [Bezeichnung, Zuordnung]
+const FKAT=[["fassade","Fassade (alle Seiten)","geb"],["dach","Dachaufsicht","geb"],["heizraum","Heizraum / Typenschild","anl"],["zstrom","Zähler Strom","anl"],
+  ["zgas","Zähler Gas","anl"],["zwaerme","Zähler Wärme","anl"],["fenster","Fensterdetails","geb"],["schaden","Auffällige Schäden","geb"]];
+function photoCard(f){
+  const refs=[["geb","Gebäude"],["anl","Anlage"],...S.cur.raeume.map(r=>[r.id,"Raum: "+roomLabel(S.cur,r)])];
+  return `<figure class="ph" data-ph="${f.id}" style="margin:0"><img src="${f.src}" alt="${esc(f.cap||"Foto")}">
+    <div class="pc"><input class="in" data-pf="cap" value="${esc(f.cap)}" placeholder="Beschreibung">
+    <select class="in" data-pf="ref">${refs.map(([k,l])=>`<option value="${k}"${k===f.ref?" selected":""}>${esc(l)}</option>`).join("")}</select>
+    <select class="in" data-pf="kat" aria-label="Kategorie"><option value="">– Kategorie –</option>${FKAT.map(([k,l])=>`<option value="${k}"${k===f.kat?" selected":""}>${esc(l)}</option>`).join("")}</select>
+    <button class="btn small ghost danger" data-act="phdel">${I.trash}Entfernen</button></div></figure>`;
+}
+function tabFoto(){
+  return `<section class="block"><div class="block-head"><h2>Fotos <span class="muted">(${S.cur.fotos.length})</span></h2>
+    <div class="row"><label class="btn primary filebtn">${I.cam}Foto aufnehmen<input type="file" accept="image/*" capture="environment" multiple data-act="photo" data-ref="geb"></label>
+    <label class="btn filebtn">Aus Galerie<input type="file" accept="image/*" multiple data-act="photo" data-ref="geb"></label></div></div>
+    <div class="sub-h">Checkliste Fotodokumentation</div>
+    <div class="fcheck" style="margin-bottom:16px">${FKAT.map(([k,l,ref])=>{ const n=S.cur.fotos.filter(f=>f.kat===k).length;
+      return `<div class="fc${n?" ok":""}"><div><div>${esc(l)}</div><div class="st">${n?"✓ "+n+(n===1?" Foto":" Fotos"):"fehlt"}</div></div>
+        <label class="btn small filebtn" aria-label="${esc(l)} fotografieren">${I.cam}<input type="file" accept="image/*" capture="environment" multiple data-act="photo" data-ref="${ref}" data-kat="${k}"></label></div>`}).join("")}</div>
+    ${S.cur.fotos.length?`<div class="photos">${S.cur.fotos.map(photoCard).join("")}</div>`:`<div class="empty">Fotos von Fassade, Typenschild, Heizkörpern und Zählern hier sammeln. Sie werden verkleinert gespeichert.</div>`}
+  </section>`;
+}
+
+const UNTERLAGEN=[["grundriss","Grundrisse / Schnitte"],["baubeschr","Baubeschreibung / Bauantrag"],["ea","vorhandener Energieausweis"],["sanNachw","Nachweise Sanierungsmaßnahmen"],
+  ["hka","Heizkostenabrechnungen (3 Jahre)"],["rHeiz","Rechnung Heizungsanlage"],["rPv","Rechnung PV-Anlage"],["rSt","Rechnung Solarthermie"]];
+function tabKunde(){
+  return `<section class="block"><h2>Kundendaten für Angebot und Rechnung</h2><div class="grid">
+    ${fld("Name","gebaeude.auftraggeber")}
+    ${fld("Firma (falls gewerblich)","kunde.firma")}
+    ${fld("E-Mail für Rechnungsversand","kunde.mail",{type:"email"})}
+    ${fld("Eigentümerstatus","kunde.status",{opts:["","Eigentümer","WEG-Verwalter","Mieter mit Vollmacht"]})}
+    ${yn("Vollmacht vorhanden (bei WEG-Objekt)","kunde.vollmacht")}
+    ${fld("Rechnungsadresse (falls abweichend)","kunde.rechAdr",{area:true})}
+  </div></section>
+  <section class="block"><h2>Unterlagen vom Kunden</h2><div class="grid">
+    ${chks("Erhalten","unterlagen",UNTERLAGEN)}
+  </div></section>`;
+}
+
+/* ---- Gegenprüfung über den Verbrauch ----
+   Φ_Verbrauch = (Ø Verbrauch × Heizwert × Nutzungsgrad − Warmwasser-Nutzwärme) / Vollbenutzungsstunden.
+   Richtwerte, im Projekt überschreibbar (anlage.vHw, vEta, vJaz, vWw, vVbh). */
+function verbHw(p,e){ return {kWh:1,"m³":10,l:p.anlage.traeger==="Flüssiggas"?6.6:10,kg:4.8,Rm:1800}[e]??NaN; }
+function verbEta(erz){ if(/Wärmepumpe/.test(erz)) return NaN; if(/Brennwert/.test(erz)) return 0.90; if(/Niedertemperatur/.test(erz)) return 0.85;
+  if(/Konstanttemperatur/.test(erz)) return 0.75; if(/Pellet|Holz/.test(erz)) return 0.80; if(/Fernwärme/.test(erz)) return 0.95;
+  if(/Nachtspeicher|Elektro/.test(erz)) return 1.0; return 0.85; }
+// Warmwasser nur abziehen, wenn es über dieselbe Anlage bereitet wird
+const wwUeberHeizung=a=>/^zentral/.test(a.ww||"")&&a.wwSep!=="ja";
+function verbCheck(p,c){ const a=p.anlage, wp=/Wärmepumpe/.test(a.erz||"");
+  const jahre=[1,2,3].map(i=>({j:a["v"+i+"j"],m:num(a["v"+i+"m"]),e:a["v"+i+"e"]||"kWh"})).filter(x=>x.m>0);
+  if(!jahre.length) return null;
+  const hwIn=num(a.vHw), kwh=jahre.map(x=>x.m*(hwIn>0?hwIn:verbHw(p,x.e))), avg=kwh.reduce((s,v)=>s+v,0)/kwh.length;
+  const eta=wp?(num(a.vJaz)>0?num(a.vJaz):3):(num(a.vEta)>0?num(a.vEta):verbEta(a.erz||""));
+  const wfl=num(p.gebaeude.wfl), wwDef=wwUeberHeizung(a)&&wfl>0?12.5*wfl:0, ww=num(a.vWw)>=0&&a.vWw!==""&&a.vWw!=null?num(a.vWw):wwDef;
+  const vbh=num(a.vVbh)>0?num(a.vVbh):2000, q=avg*eta-ww, phiV=q/vbh*1000;
+  // Raumrechnung auf die Wohnfläche hochrechnen, wenn nicht alle Räume erfasst sind
+  const anteil=wfl>0&&c.A>0?c.A/wfl:NaN, phiR=c.HL, phiRges=anteil>0&&anteil<0.95?c.HL/anteil:c.HL;
+  const abw=phiV>0?phiRges/phiV-1:NaN;
+  return {jahre,avg,eta,wp,ww,wwDef,vbh,q,phiV,phiR,phiRges,anteil,abw,hwFehlt:kwh.some(v=>!isFinite(v))}; }
+function verbSection(p){
+  return `<section class="block"><div class="block-head"><h2>Gegenprüfung über den Verbrauch</h2></div>
+    <div class="grid">
+      ${fld(/Wärmepumpe/.test(p.anlage.erz||"")?"Jahresarbeitszahl (JAZ)":"Jahresnutzungsgrad η",/Wärmepumpe/.test(p.anlage.erz||"")?"anlage.vJaz":"anlage.vEta",{dec:true,ph:/Wärmepumpe/.test(p.anlage.erz||"")?"3,0":fmt(verbEta(p.anlage.erz||""),2)})}
+      ${fld("Heizwert je Einheit","anlage.vHw",{dec:true,unit:"kWh",ph:"nach Einheit"})}
+      ${fld("Warmwasser-Wärme abziehen","anlage.vWw",{dec:true,unit:"kWh/a",ph:wwUeberHeizung(p.anlage)&&num(p.gebaeude.wfl)>0?fmt(12.5*num(p.gebaeude.wfl),0):"0"})}
+      ${fld("Vollbenutzungsstunden","anlage.vVbh",{dec:true,unit:"h/a",ph:"2000"})}
+    </div>
+    <div id="verbtab" style="margin-top:12px;min-width:0">${verbTable(p,calc(p))}</div>
+    <p class="note">Überschlag mit Richtwerten (Heizwerte: Gas 10 kWh/m³, Heizöl 10 kWh/l, Flüssiggas 6,6 kWh/l, Pellets 4,8 kWh/kg, Scheitholz 1800 kWh/Rm; Warmwasser 12,5 kWh/(m²·a) × Wohnfläche, nur wenn zentral über die Heizung). Verbräuche sind nicht witterungsbereinigt; Leerstand und Nutzerverhalten verschieben das Ergebnis. Die Norm-Heizlast liegt meist etwas über dem Verbrauchswert.</p></section>`; }
+function verbTable(p,c){ const v=verbCheck(p,c);
+  if(!v) return `<p class="muted" style="margin:0">Keine Verbräuche erfasst – im Reiter „Anlage“ unter „Verbräuche“ eintragen.</p>`;
+  if(v.hwFehlt) return `<p class="muted" style="margin:0">Für eine Einheit ist kein Heizwert bekannt – „Heizwert je Einheit“ eintragen.</p>`;
+  if(!(v.phiV>0)) return `<p class="muted" style="margin:0">Nach Abzug des Warmwassers bleibt keine Heizwärme – Angaben prüfen.</p>`;
+  const a=Math.abs(v.abw), [txt,cls]=!isFinite(v.abw)||!(v.phiR>0)?["Raumrechnung fehlt",""]:a<=0.25?["plausibel","ok"]:a<=0.5?["prüfen","amber"]:["deutliche Abweichung","danger"];
+  const tipps=!(v.phiR>0)||a<=0.25?"":v.abw>0
+    ?"Raumrechnung höher als der Verbrauch: Sanierungen oder bessere U-Werte nicht erfasst? Luftwechsel zu hoch angesetzt? Teile des Hauses kaum beheizt oder Leerstand im Zeitraum? Nutzungsgrad zu niedrig angenommen?"
+    :"Raumrechnung niedriger als der Verbrauch: Räume oder Bauteile fehlen (Dach, Kellerdecke, Fenster)? U-Werte zu günstig? Warmwasser im Verbrauch nicht abgezogen? Hohe Raumtemperaturen, schlechter Nutzungsgrad oder Verluste im Keller?";
+  const ant=v.anteil>0?` · erfasst ${fmt(v.anteil*100,0)} % der Wohnfläche`:"";
+  return `<div class="sum"><div><span class="label">aus Verbrauch</span><b>${fmt(v.phiV/1000,1)} kW</b></div>
+      <div><span class="label">aus Raumrechnung${v.anteil>0&&v.anteil<0.95?" (hochgerechnet)":""}</span><b>${v.phiR>0?fmt(v.phiRges/1000,1)+" kW":"–"}</b></div>
+      <div><span class="label">Abweichung</span><b>${isFinite(v.abw)&&v.phiR>0?(v.abw>0?"+":"")+fmt(v.abw*100,0)+" %":"–"}</b></div>
+      <div><span class="label">Einschätzung</span><b class="wp-${cls}" style="font-size:1rem;font-family:var(--f-body)">${txt}</b></div></div>
+    ${v.anteil>0&&v.anteil<0.95?`<div class="banner" style="margin-top:12px">Erst ${fmt(v.anteil*100,0)} % der Wohnfläche als Räume erfasst – die Raumrechnung (${fmt(v.phiR/1000,2)} kW) ist auf die ganze Wohnfläche hochgerechnet.</div>`:""}
+    ${!(num(p.gebaeude.wfl)>0)?`<div class="banner" style="margin-top:12px">Wohnfläche fehlt (Reiter „Gebäude“) – Hochrechnung und Warmwasserabzug sind so nicht möglich.</div>`:""}
+    <p class="muted" style="font-size:.85rem;margin:12px 0 0">Ø ${fmt(v.avg,0)} kWh/a aus ${v.jahre.length} ${v.jahre.length===1?"Jahr":"Jahren"} × ${v.wp?"JAZ":"η"} ${fmt(v.eta,2)} − Warmwasser ${fmt(v.ww,0)} kWh = ${fmt(v.q,0)} kWh Heizwärme ÷ ${fmt(v.vbh,0)} h${ant}</p>
+    ${tipps?`<p class="note" style="margin-top:8px">${tipps}</p>`:""}`; }
+function wpSection(p,c){
+  return `<section class="block"><div class="block-head"><h2>Heizkörper und Wärmepumpen-Eignung</h2></div>
+    <div class="grid">${fld("Ziel-Vorlauftemperatur","anlage.wpVl",{dec:true,unit:"°C",ph:"55"})}${fld("Spreizung Vorlauf/Rücklauf","anlage.wpSpreiz",{dec:true,unit:"K",ph:"5"})}</div>
+    <div id="wptab" style="margin-top:12px;min-width:0">${wpTable(p,c)}</div>
+    <p class="note">Leistung nach DIN EN 442 umgerechnet: Q = Qn · (Δθ_ln / 49,83 K)^n. Flachheizkörper ohne Typenschild nach Buderus-Tabelle (Logatrend VK/K-Profil, 02/2002) geschätzt. Bezug ist die überschlägige Raumheizlast bei θe ohne Aufheizzuschlag. Erste Einschätzung für die Beratung – Auslegung und hydraulischen Abgleich in Hottgenroth bzw. mit Herstellerdaten bestätigen.</p></section>`; }
+function wpTable(p,c){ const W=wpRooms(p,c), tv=wpZiel(p), sp=wpSpr(p), calcd=W.filter(w=>["ok","tausch"].includes(w.st));
+  if(!W.some(w=>(w.r.hk||[]).length||w.r.fbh==="ja")) return `<p class="muted" style="margin:0">Noch keine Heizkörper erfasst – im Raum unter „Heizkörper“ eintragen.</p>`;
+  const vl=calcd.length?Math.max(...calcd.map(w=>w.vl)):NaN, [txt,cls]=calcd.length?wpRating(vl):["–",""];
+  const tausch=W.filter(w=>w.st==="tausch"), offen=W.filter(w=>["ohne","unvollst"].includes(w.st));
+  const vlTxt=v=>isFinite(v)?fmt(Math.ceil(v),0)+" °C":"> 90 °C";
+  const rows=W.filter(w=>w.st!=="keine").map(w=>`<tr><td>${esc(roomLabel(p,w.r))}</td><td class="n">${fmt(w.phi,0)}</td><td class="n">${w.qn?fmt(w.qn,0):"–"}</td><td class="n">${["ok","tausch"].includes(w.st)?fmt(w.qz,0):"–"}</td>
+    <td class="n${w.st==="tausch"?" warn":""}">${["ok","tausch"].includes(w.st)?fmt(w.deck*100,0)+" %":"–"}</td><td class="n">${["ok","tausch"].includes(w.st)?vlTxt(w.vl):"–"}</td>
+    <td class="wrap">${WP_ST[w.st]}${w.st==="tausch"?` – ≥ ${fmt(Math.ceil(w.need/50)*50,0)} W Normleistung`:""}</td></tr>`).join("");
+  return `<div class="sum"><div><span class="label">nötige Vorlauftemperatur</span><b>${calcd.length?vlTxt(vl):"–"}</b></div><div><span class="label">Einschätzung</span><b class="wp-${cls}" style="font-size:1rem;font-family:var(--f-body)">${txt}</b></div>
+      <div><span class="label">Tausch bei ${fmt(tv,0)} °C</span><b>${tausch.length} ${tausch.length===1?"Raum":"Räume"}</b></div></div>
+    ${offen.length?`<div class="banner" style="margin-top:12px">Nicht bewertet: ${offen.map(w=>esc(roomLabel(p,w.r))+" ("+WP_ST[w.st]+")").join(", ")}. Die nötige Vorlauftemperatur kann dadurch höher liegen.</div>`:""}
+    <div class="tw" style="margin-top:12px"><table><thead><tr><th>Raum</th><th class="n">Φ_HL W</th><th class="n">Qn 75/65 W</th><th class="n">Q ${fmt(tv,0)}/${fmt(tv-sp,0)} W</th><th class="n">Deckung</th><th class="n">nötige VL</th><th>Bewertung</th></tr></thead><tbody>${rows}</tbody></table></div>`; }
+function tabErg(){
+  const p=S.cur, c=calc(p);
+  const row=r=>{const x=c.r[r.id];return `<tr><td>${esc(r.name)}</td><td>${esc(r.geschoss)}</td><td class="n">${fmt(nz(r.fl),1)}</td><td class="n">${fmt(nz(r.ti,20),0)}</td><td class="n">${fmt(x.T,0)}</td><td class="n">${fmt(x.V,0)}</td><td class="n hl">${fmt(x.HL,0)}</td><td class="n">${fmt(x.perm2,0)}</td></tr>`};
+  const rows=p.einheiten.length<=1 ? p.raeume.map(row).join("") : weGroups(p).map(({w,rs})=>{
+    const s=k=>rs.reduce((a,r)=>a+c.r[r.id][k],0), A=rs.reduce((a,r)=>a+nz(r.fl),0), HL=s("HL");
+    return `<tr class="grp"><td colspan="8">${esc(weName(w))}</td></tr>${rs.map(row).join("")||`<tr><td colspan="8" class="muted">Keine Räume erfasst.</td></tr>`}
+      ${rs.length?`<tr class="sub"><td>Summe ${esc(w?w.name:"ohne Zuordnung")}</td><td></td><td class="n">${fmt(A,1)}</td><td></td><td class="n">${fmt(s("T"),0)}</td><td class="n">${fmt(s("V"),0)}</td><td class="n hl">${fmt(HL,0)}</td><td class="n">${fmt(A>0?HL/A:NaN,0)}</td></tr>`:""}`; }).join("");
+  const leist=nz(p.anlage.leistung), PL=plaus(p,c), nF=PL.filter(x=>x.lvl==="f").length, nW=PL.filter(x=>x.lvl==="w").length;
+  const plSec=`<section class="block"><div class="block-head"><h2>Plausibilität</h2><span class="muted" style="font-size:.85rem">${PL.length?`${nF} Fehler · ${nW} zu prüfen · ${PL.length-nF-nW} Hinweise`:""}</span></div>
+    ${PL.length?`<ul class="pl-list">${PL.map(x=>plausItem(x,true)).join("")}</ul>`:`<p class="muted" style="margin:0">Keine Auffälligkeiten gefunden.</p>`}</section>`;
+  return `${plSec}<div class="sum"><div><span class="label">Heizlast gesamt</span><b>${fmt(c.HL/1000,2)} kW</b></div><div><span class="label">spezifisch</span><b>${fmt(c.perm2,0)} W/m²</b></div>${leist?`<div><span class="label">Bestandskessel</span><b>${fmt(leist,0)} kW</b></div><div><span class="label">Überdimensionierung</span><b>${c.HL>0?fmt(leist*1000/c.HL,1)+" ×":"–"}</b></div>`:""}</div>
+  <section class="block"><div class="block-head"><h2>Raumweise Heizlast</h2><span class="muted mono" style="font-size:.85rem">θe ${fmt(nz(p.klima.te),1)} °C</span></div>
+  <div class="tw"><table><thead><tr><th>Raum</th><th>Geschoss</th><th class="n">m²</th><th class="n">θint</th><th class="n">Φ_T W</th><th class="n">Φ_V W</th><th class="n">Φ_HL W</th><th class="n">W/m²</th></tr></thead>
+  <tbody>${rows||`<tr><td colspan="8" class="muted">Keine Räume erfasst.</td></tr>`}</tbody>
+  <tfoot><tr><td>Summe</td><td></td><td class="n">${fmt(c.A,1)}</td><td></td><td class="n">${fmt(c.T,0)}</td><td class="n">${fmt(c.V,0)}</td><td class="n hl">${fmt(c.HL,0)}</td><td class="n">${fmt(c.perm2,0)}</td></tr></tfoot></table></div>
+  <p class="note">Überschlägige Summe der Raumheizlasten ohne Gleichzeitigkeit und Aufheizzuschlag. Für Angebot, Förderantrag oder Wärmepumpenauslegung die Werte in Hottgenroth nachrechnen.</p></section>
+  ${verbSection(p)}
+  ${wpSection(p,c)}
+  <section class="block noprint"><h2>Export</h2>
+    <div class="row">
+      <button class="btn primary" data-act="xjson">Sicherung (JSON)</button>
+      <button class="btn" data-act="xcsvb">Bauteilliste (CSV)</button>
+      <button class="btn" data-act="xcsvr">Raumliste (CSV)</button>
+      ${IN_FRAME?"":`<button class="btn" data-act="protokoll">Aufnahmeprotokoll (PDF)</button>`}
+    </div>
+    <p class="note">Die CSV-Dateien öffnen sich in Excel (Semikolon, Dezimalkomma) und dienen als Vorlage für die Eingabe in Hottgenroth. Die JSON-Sicherung enthält alles inklusive Fotos und lässt sich auf jedem Gerät wieder importieren.</p>
+  </section>`;
+}
+
+/* ============ Aufnahmeprotokoll (Druck / PDF) ============ */
+// Briefkopf gilt für alle Projekte: localStorage, zusätzlich in der JSON-Sicherung
+const BK_DEF={firma:"",zusatz:"",name:"",quali:"",strasse:"",ort:"",tel:"",mail:"",web:"",logo:""};  // bewusst leer – eigene Daten nur auf dem Gerät
+function bkGet(){ try{ return Object.assign({},BK_DEF,JSON.parse(localStorage.getItem("aufmass.briefkopf")||"{}")) }catch(e){ return {...BK_DEF} } }
+function bkSet(b){ try{ localStorage.setItem("aufmass.briefkopf",JSON.stringify(b)); return true }catch(e){ toast("Briefkopf konnte nicht gespeichert werden (Speicher voll?)"); return false } }
+const BK_FIELDS=[["firma","Firma / Büro"],["zusatz","Zusatz / Tätigkeit"],["name","Name"],["quali","Qualifikation (z. B. Energieeffizienz-Experte)"],["strasse","Straße, Nr."],["ort","PLZ Ort"],["tel","Telefon"],["mail","E-Mail"],["web","Web"]];
+// Kopfzeile der Objektliste: eigenes Logo und Firmenname, sonst nur der App-Name
+function brandHtml(){ const b=bkGet();
+  return `${b.logo?`<span class="brand" aria-hidden="true"><img src="${esc(b.logo)}" alt=""></span>`:""}<h1>${b.firma?esc(b.firma)+' <span style="font-weight:500;color:var(--muted)">Aufmaß Heizlast</span>':"Aufmaß Heizlast"}</h1>`; }
+// Logo als Data-URL: SVG unverändert (nur als <img> angezeigt, Skripte laufen dort nicht), Rasterbilder max. 800 px als PNG
+function bkLogoLoad(file){ return new Promise((res,rej)=>{
+  if(file.type==="image/svg+xml"){ if(file.size>300000) return rej(new Error("SVG größer als 300 kB")); const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(file); return; }
+  const url=URL.createObjectURL(file), img=new Image();
+  img.onload=()=>{ const s=Math.min(1,800/Math.max(img.width,img.height)), cv=document.createElement("canvas"); cv.width=Math.round(img.width*s); cv.height=Math.round(img.height*s);
+    cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height); URL.revokeObjectURL(url); res(cv.toDataURL("image/png")); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("Bild nicht lesbar")) }; img.src=url; }); }
+function bkLogoBox(b){ return `<div class="row" id="bklogo">${b.logo?`<img src="${esc(b.logo)}" alt="Logo" style="height:48px;max-width:160px;object-fit:contain;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:4px">
+    <button class="btn small ghost danger" data-act="bklogodel">${I.trash}Logo entfernen</button>`:`<span class="muted" style="font-size:.85rem">Kein Logo hinterlegt.</span>`}
+    <label class="btn small filebtn">Logo hochladen<input type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" data-act="bklogo"></label></div>`; }
+function bkDialog(){ const b=bkGet();
+  $("#layer").innerHTML=`<div class="modal" data-act="close"><div class="dlg" role="dialog" aria-label="Briefkopf" style="grid-template-rows:auto 1fr auto">
+    <div class="block-head"><h2>Briefkopf für Protokolle</h2><button class="btn small ghost" data-act="close">Schließen</button></div>
+    <div style="overflow:auto;display:grid;gap:12px"><div class="f"><span>Logo (SVG, PNG oder JPG)</span>${bkLogoBox(b)}</div><div class="grid">${BK_FIELDS.map(([k,l])=>`<label class="f${k==="zusatz"||k==="quali"?" wide":""}"><span>${l}</span><input class="in" data-bk="${k}" value="${esc(b[k])}"${k==="mail"?' type="email"':k==="tel"?' type="tel"':""}></label>`).join("")}</div></div>
+    <div class="row"><button class="btn primary" data-act="bksave">Speichern</button><span class="muted" style="font-size:.85rem">Gilt für alle Objekte auf diesem Gerät und steht in der JSON-Sicherung.</span></div></div></div>`; }
+
+const PR_OPTS=[["bauteile","Bauteile je Raum"],["heizkoerper","Heizkörper je Raum"],["anlage","Anlagentechnik und Verbräuche"],["kunde","Kundendaten und Unterlagen"],["fotos","Fotos"],["unterschrift","Unterschriftsfelder"]];
+function prDialog(){ let o; try{ o=JSON.parse(localStorage.getItem("aufmass.protokoll")||"null") }catch(e){} o=Object.assign({bauteile:true,heizkoerper:true,anlage:true,kunde:true,fotos:true,unterschrift:true},o);
+  $("#layer").innerHTML=`<div class="modal" data-act="close"><div class="dlg" role="dialog" aria-label="Aufnahmeprotokoll" style="grid-template-rows:auto auto auto">
+    <div class="block-head"><h2>Aufnahmeprotokoll</h2><button class="btn small ghost" data-act="close">Schließen</button></div>
+    <div class="chks" style="flex-direction:column">${PR_OPTS.map(([k,l])=>`<label class="chk"><input type="checkbox" data-pr="${k}"${o[k]?" checked":""}>${l}</label>`).join("")}</div>
+    <div class="row"><button class="btn primary" data-act="prgo">Drucken / als PDF speichern</button><button class="btn" data-act="bkedit">Briefkopf bearbeiten</button></div>
+    <p class="note" style="margin:0">Im Druckdialog als Drucker „Als PDF speichern“ wählen.</p></div></div>`; }
+
+// Zeilen [Bezeichnung, Wert] – leere Werte fallen weg
+const prv=v=>v!=null&&String(v).trim()!==""&&v!=="–";
+function prKV(title,rows){ rows=rows.filter(([,v])=>prv(v)); if(!rows.length) return "";
+  return `<h3>${esc(title)}</h3><table class="kv">${rows.map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")}</table>`; }
+const prU=(v,u)=>prv(v)?v+" "+u:"";
+const prChk=(o,items)=>items.filter(([k])=>o?.[k]==="ja").map(([,l])=>l).join(", ");
+const prDate=d=>{ const t=d&&new Date(d+"T12:00:00"); return t&&!isNaN(t)?t.toLocaleDateString("de-DE"):(d||""); };
+
+// Nur aufgenommene Daten – keine Rechenergebnisse, Bewertungen oder Warnungen
+function protokollHtml(p,o){ const g=p.gebaeude, a=p.anlage, k=p.kunde||{}, b=bkGet(), uv=Object.assign({},UVOR_DEF,p.uvor);
+  const logo=b.logo?`<img class="pr-logo" src="${esc(b.logo)}" alt="">`:"";
+  const kontakt=[b.name,b.quali,b.strasse,b.ort,b.tel&&"Tel. "+b.tel,b.mail,b.web].filter(Boolean);
+  let h=`<header class="pr-bk"><div class="pr-marke">${logo}<div><div class="pr-firma">${esc(b.firma)}</div><div class="pr-zusatz">${esc(b.zusatz)}</div></div></div>
+      <address>${kontakt.map(esc).join("<br>")}</address></header>
+    <div class="pr-titel"><h1>Aufnahmeprotokoll</h1><div>Vor-Ort-Termin am ${esc(prDate(g.datum))}</div></div>
+    <table class="pr-objekt"><tr><th>Objekt</th><td>${esc(g.bez||"")}</td><th>Auftraggeber</th><td>${esc(g.auftraggeber||"")}</td></tr>
+      <tr><th>Adresse</th><td>${esc([g.strasse,[g.plz,g.ort].filter(Boolean).join(" ")].filter(Boolean).join(", "))}</td><th>Aufgenommen von</th><td>${esc(b.name)}</td></tr></table>`;
+  // Gebäude
+  h+=`<section><h2>Gebäude</h2>`+prKV("Stammdaten",[["Gebäudetyp",g.typ],["Baujahr",g.baujahr],["Wohneinheiten",g.we],["Vollgeschosse",g.geschosse],["Keller",g.keller],["Dachgeschoss",g.dg],
+      ["Wohnfläche",prU(g.wfl,"m²")],["Nutzfläche",prU(g.nfl,"m²")],["Gebäudevolumen",prU(g.vol,"m³")],["Ausrichtung Hauptfassade",g.ausr],["Denkmalschutz",g.denkmal],["Personen im Haushalt",g.personen],
+      ["Anbauten",prChk(g.anbau,[["wintergarten","Wintergarten"],["erker","Erker"],["vorbau","Vorbau"]])],["Bisherige Sanierungen",g.sanierung],["Notizen",g.notiz]]);
+  const hr=["aw","da","og","kd","bp"].map(kk=>{ const s0=uv.san?.[kk]||{}, kon=p.uvor?.[kk]?UTAB[kk][uv[kk]]?.l:"";
+      const san=[s0.bj&&"Baujahr "+s0.bj,num(s0.d)>0&&fmt(num(s0.d),0)+" cm Dämmung"+(s0.lam?" (λ "+s0.lam+")":""),s0.art,s0.sj&&"saniert "+s0.sj].filter(Boolean).join(", ");
+      return kon||san||s0.zust?`<tr><td>${TYPES[kk].l}</td><td>${esc(kon||"")}</td><td>${esc(san)}</td><td>${esc(s0.zust||"")}</td></tr>`:""}).join("")
+    +((p.uvor?.fe||uv.feJahr||uv.feGlas)?`<tr><td>Fenster</td><td>${esc([UTAB.fe[uv.fe]?.l,uv.feGlas].filter(Boolean).join(", "))}</td><td>${esc(uv.feJahr?"eingebaut "+uv.feJahr:"")}</td><td></td></tr>`:"")
+    +((p.uvor?.tu||uv.tuJahr||uv.tuGed)?`<tr><td>Außentüren</td><td>${esc(UTAB.tu[uv.tu]?.l||"")}</td><td>${esc([uv.tuJahr&&"Baujahr "+uv.tuJahr,uv.tuGed==="ja"?"gedämmt":uv.tuGed==="nein"?"ungedämmt":""].filter(Boolean).join(", "))}</td><td></td></tr>`:"");
+  if(hr) h+=`<h3>Gebäudehülle</h3><table class="pr-t"><thead><tr><th>Bauteil</th><th>Konstruktion</th><th>Sanierungsstand</th><th>Zustand</th></tr></thead><tbody>${hr}</tbody></table>`;
+  h+=prKV("Wärmebrücken und Luftdichtheit",[["Details dokumentiert",p.klima.wbDoku],["Wärmebrückennachweis",p.klima.wbNachweis],["Blower-Door-Test",p.klima.blower],["n50",prU(p.klima.n50,"1/h")]])+`</section>`;
+  // Räume
+  if(p.raeume.length){ h+=`<section><h2>Räume</h2>`;
+    for(const {w,rs} of ((p.einheiten||[]).length>1?weGroups(p):[{w:null,rs:p.raeume}])){
+      if((p.einheiten||[]).length>1) h+=`<h3 class="pr-we">${esc(weName(w))}</h3>`;
+      for(const r of rs){
+        h+=`<div class="pr-room"><h4>${esc(r.name)}</h4><div class="pr-rk">${esc([r.geschoss,r.nutzung,prv(r.fl)&&"Grundfläche "+r.fl+" m²",prv(r.h)&&"lichte Höhe "+r.h+" m",prv(r.ti)&&"Soll "+r.ti+" °C",r.fbh==="ja"&&"Fußbodenheizung"].filter(Boolean).join(" · "))}</div>`;
+        if(o.bauteile&&r.bt.length){ const ord=[], used=new Set();
+          for(const bb of r.bt){ if(TYPES[bb.typ].open&&bb.in&&r.bt.some(w2=>w2.id===bb.in)) continue; ord.push(bb); used.add(bb.id); for(const oo of r.bt) if(TYPES[oo.typ].open&&oo.in===bb.id){ord.push(oo);used.add(oo.id)} }
+          for(const bb of r.bt) if(!used.has(bb.id)) ord.push(bb);
+          h+=`<table class="pr-t"><thead><tr><th>Bauteil</th><th>Richtung</th><th>Maße</th><th class="n">Anzahl</th><th class="n">Fläche m²</th><th class="n">U W/m²K</th><th>grenzt an</th></tr></thead><tbody>${ord.map(bb=>{ const sub=TYPES[bb.typ].open&&bb.in, A=grossA(bb);
+            const mass=num(bb.a)>0?"":(prv(bb.b)&&prv(bb.h)?`${bb.b} × ${bb.h} m`:"");
+            return `<tr${sub?' class="pr-sub"':""}><td>${sub?"↳ ":""}${esc(TYPES[bb.typ].l+(bb.bez?" "+bb.bez:""))}</td><td>${esc(bb.ri)}</td><td>${esc(mass)}</td><td class="n">${nz(bb.anz,1)!==1?esc(bb.anz):""}</td><td class="n">${A>0?fmt(A,2):""}</td><td class="n">${esc(bb.u)}</td><td>${esc(ADJ[bb.adj]+(bb.adj==="beheizt"&&prv(bb.tn)?" ("+bb.tn+" °C)":""))}</td></tr>`}).join("")}</tbody></table>`; }
+        if(o.heizkoerper&&(r.hk||[]).length) h+=`<table class="pr-t"><thead><tr><th>Heizkörper</th><th>Lage</th><th>Maße</th><th class="n">Normleistung</th></tr></thead><tbody>${r.hk.map(hh=>`<tr><td>${esc((HK_TYP.find(t=>t[0]===hh.typ)||["",""])[1])}</td><td>${esc(hh.bez)}</td>
+            <td>${esc([prv(hh.l)&&"L "+hh.l+" mm",prv(hh.h)&&"H "+hh.h+" mm",hh.typ==="glied"&&prv(hh.anz)&&hh.anz+" Glieder"+(prv(hh.qg)?" à "+hh.qg+" W":"")].filter(Boolean).join(" · "))}</td>
+            <td class="n">${prv(hh.qn)?esc(hh.qn)+" W"+(hh.norm==="90"?" (90/70)":""):""}</td></tr>`).join("")}</tbody></table>`;
+        if(prv(r.notiz)) h+=`<p class="pr-small">Notiz: ${esc(r.notiz)}</p>`;
+        h+=`</div>`; } }
+    h+=`</section>`; }
+  // Anlage
+  if(o.anlage){ const ver=[1,2,3].map(i=>a["v"+i+"m"]?`${a["v"+i+"j"]||"?"}: ${a["v"+i+"m"]} ${a["v"+i+"e"]||""}`:"").filter(Boolean).join(" · ");
+    const sec=prKV("Wärmeerzeuger",[["Art",a.erz],["Hersteller / Typ",a.hersteller],["Baujahr",a.baujahr],["Nennleistung",prU(a.leistung,"kW")],["Energieträger",a.traeger]])
+      +prKV("Verteilung und Übergabe",[["Heizflächen",a.heizflaechen],["Systemtemperaturen",prv(a.vl)||prv(a.rl)?`${a.vl||"?"}/${a.rl||"?"} °C`:""],["Hydraulischer Abgleich",a.abgleich],["Rohrleitungen gedämmt",a.rohrGed],["Verlegung Rohrleitungen",a.rohrLage],
+        ["Pufferspeicher",[a.puffer,prU(a.pufferL,"l")].filter(prv).join(", ")],["Regelung",prChk(a.regel,[["einzel","Einzelraumregelung"],["at","Außentemperaturführung"],["nacht","Nachtabsenkung"],["keine","keine"]])]])
+      +prKV("Warmwasser und Lüftung",[["Warmwasser",a.ww],["Speicher",prU(a.wwspeicher,"l")],["Zirkulation",[a.zirk,a.zirkGed==="ja"?"gedämmt":a.zirkGed==="nein"?"ungedämmt":""].filter(prv).join(", ")],["Lüftung",a.lueftung],["Baujahr Lüftungsanlage",a.lueftBj],["Wartungszustand",a.lueftZust]])
+      +prKV("Erneuerbare Energien",[["Photovoltaik",[a.pv,prU(a.pvKwp,"kWp"),a.pvBj&&"Baujahr "+a.pvBj,a.pvAusr&&"Ausrichtung "+a.pvAusr].filter(prv).join(", ")],["Batteriespeicher",a.batt],["Solarthermie",[a.st,prU(a.stFl,"m²")].filter(prv).join(", ")]])
+      +prKV("Verbräuche",[["Verbrauch",ver],["Warmwasser separat ausgewiesen",a.wwSep],["Zählerstände abgelesen",a.zaehler],["Leerstand",a.leerstand]])
+      +prKV("Notizen",[["Anlage",a.notiz]]);
+    if(sec) h+=`<section><h2>Anlagentechnik</h2>${sec}</section>`; }
+  if(o.kunde){ const sec=prKV("Kundendaten",[["Name",g.auftraggeber],["Firma",k.firma],["E-Mail",k.mail],["Eigentümerstatus",k.status],["Vollmacht (WEG)",k.vollmacht],["Rechnungsadresse",k.rechAdr]])
+      +prKV("Unterlagen",[["Erhalten",prChk(p.unterlagen,UNTERLAGEN)]]);
+    if(sec) h+=`<section><h2>Kunde</h2>${sec}</section>`; }
+  if(o.fotos&&p.fotos.length){ const ref=f=>f.ref==="geb"?"Gebäude":f.ref==="anl"?"Anlage":(r=>r?roomLabel(p,r):"")(p.raeume.find(r=>r.id===f.ref));
+    h+=`<section class="pr-fotos"><h2>Fotodokumentation</h2><div class="pr-fgrid">${p.fotos.map((f,i)=>`<figure><img src="${f.src}" alt=""><figcaption><b>Foto ${i+1}</b> · ${esc([FKAT.find(x=>x[0]===f.kat)?.[1],ref(f),f.cap].filter(Boolean).join(" · "))}</figcaption></figure>`).join("")}</div></section>`; }
+  if(o.unterschrift) h+=`<section class="pr-sig"><div><span></span>Ort, Datum, Unterschrift Auftraggeber</div><div><span></span>Ort, Datum, Unterschrift ${esc(b.name||"Berater/in")}</div></section>`;
+  h+=`<footer class="pr-foot">${esc([b.firma,b.name,b.strasse,b.ort,b.tel&&"Tel. "+b.tel,b.mail,b.web].filter(Boolean).join(" · "))}</footer>`;
+  return h; }
+function prClear(){ document.body.classList.remove("printing"); const el=$("#printroot"); if(el) el.innerHTML=""; }
+function prPrint(o){ let el=$("#printroot"); if(!el){ el=document.createElement("div"); el.id="printroot"; document.body.appendChild(el); }
+  el.innerHTML=protokollHtml(S.cur,o); document.body.classList.add("printing");
+  // Nicht bei „afterprint“ aufräumen: Unter Android kehrt window.print() sofort zurück und das Ereignis kann
+  // kommen, bevor die Druckvorschau steht – dann fehlte das Protokoll im PDF. Auf dem Bildschirm ist es
+  // unsichtbar; prClear() entfernt es beim nächsten render().
+  // Bilder fertig laden lassen, sonst fehlen sie im PDF
+  Promise.all([...el.querySelectorAll("img")].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r}))).then(()=>setTimeout(()=>window.print(),50)); }
+
+/* ============ Export ============ */
+function csvCell(v){ v=String(v??""); return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v }
+const dn=(n,d)=>isFinite(n)?n.toFixed(d).replace(".",","):"";
+function csvBauteile(p){ const c=calc(p); const h=["Wohneinheit","Raum","Geschoss","θint °C","Bauteil","Bezeichnung","Richtung","Breite m","Höhe m","Anzahl","Fläche netto m²","U W/m²K","grenzt an","θ Nachbar °C","abgezogen von","Φ_T W"];
+  const L=[h.join(";")];
+  for(const r of p.raeume) for(const b of r.bt){ const x=c.r[r.id].b[b.id]; const w=r.bt.find(o=>o.id===b.in);
+    L.push([weName(weOf(p,r)),r.name,r.geschoss,r.ti,TYPES[b.typ].l,b.bez,b.ri,b.b,b.h,b.anz,dn(x.A,2),b.u,ADJ[b.adj],b.adj==="beheizt"?b.tn:"",w?(TYPES[w.typ].l+(w.bez?" "+w.bez:"")):"",dn(x.phi,0)].map(csvCell).join(";")) }
+  return "﻿"+L.join("\r\n"); }
+function csvRaeume(p){ const c=calc(p); const L=["Wohneinheit;Raum;Geschoss;Nutzung;Fläche m²;Höhe m;θint °C;Luftwechsel 1/h;Φ_T W;Φ_V W;Φ_HL W;W/m²"];
+  for(const r of p.raeume){const x=c.r[r.id]; L.push([weName(weOf(p,r)),r.name,r.geschoss,r.nutzung,r.fl,r.h,r.ti,r.n,dn(x.T,0),dn(x.V,0),dn(x.HL,0),dn(x.perm2,0)].map(csvCell).join(";"))}
+  return "﻿"+L.join("\r\n"); }
+const fname=(p,ext)=>(p.gebaeude.bez||"objekt").replace(/[^\wäöüÄÖÜß\- ]+/g,"").trim().replace(/\s+/g,"_")+"_"+today()+"."+ext;
+
+function deliver(name,text,mime){
+  if(!IN_FRAME){ try{ const url=URL.createObjectURL(new Blob([text],{type:mime})); const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000); toast("Datei gespeichert: "+name); return; }catch(e){} }
+  const big=text.length>400000;
+  $("#layer").innerHTML=`<div class="modal" data-act="close"><div class="dlg" role="dialog" aria-label="Export">
+    <div class="block-head"><h2>${esc(name)}</h2><button class="btn small ghost" data-act="close">Schließen</button></div>
+    <textarea class="in" id="xtext" readonly>${big?"":esc(text)}</textarea>
+    <div class="row"><button class="btn primary" data-act="copyx">${I.copy}In Zwischenablage kopieren</button><span class="muted" style="font-size:.85rem">In dieser Vorschau sind Downloads gesperrt. In der installierten App wird die Datei direkt gespeichert.</span></div>
+  </div></div>`;
+  const ta=$("#xtext"); if(big) ta.value=text; ta._full=text;
+}
+/* ============ Version ============ */
+const verText=(cache)=>`Version ${APP_VERSION} · ${APP_DATE}`+(cache&&cache!=="aufmass-v"+APP_VERSION?` · Cache ${cache}`:"");
+// Aktiven Cache nachtragen; weicht er ab, wurde eine andere Version geladen als gerade läuft
+async function paintVer(){ try{ const c=(await caches.keys()).find(k=>k.startsWith("aufmass-v")); const el=$("#ver"); if(el) el.textContent=verText(c); }catch(e){} }
+function showUpdate(){ if($("#updbar")) return;
+  document.body.insertAdjacentHTML("beforeend",`<div class="updbar noprint" id="updbar" role="status"><span>Neue Version geladen – bitte neu laden.</span><button class="btn small primary" data-act="reload">Jetzt neu laden</button></div>`); }
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600) }
+
+/* ============ Fotos ============ */
+function compress(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const img=new Image();
+  img.onload=()=>{ const s=Math.min(1,1600/Math.max(img.width,img.height)); const cv=document.createElement("canvas"); cv.width=Math.round(img.width*s); cv.height=Math.round(img.height*s);
+    cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height); URL.revokeObjectURL(url); res(cv.toDataURL("image/jpeg",0.78)); };
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("Bild nicht lesbar"))}; img.src=url; }) }
+
+/* ============ Ereignisse ============ */
+function curRoom(){ return S.cur.raeume.find(r=>r.id===S.room) }
+function refreshCalcs(){ const c=calc(S.cur);
+  document.querySelectorAll("[data-calc]").forEach(el=>{ const k=el.dataset.calc;
+    if(k==="title"){ el.textContent=S.cur.gebaeude.bez||"Ohne Namen"; return; }
+    const [kind,rid,a,b]=k.split("."); let v;
+    if(kind==="r") v=c.r[rid]?.[a]; else if(kind==="b") v=c.r[rid]?.b[a]?.[b];
+    el.textContent=fmt(v, kind==="b"&&b==="A"?2:0); }); paintHk(); paintPlaus(); }
+
+const app=$("#app");
+app.addEventListener("input",e=>{ const t=e.target; if(!S.cur) return;
+  if(t.dataset.bind){ setP(S.cur,t.dataset.bind,t.type==="checkbox"?(t.checked?"ja":""):t.value);
+    if(t.dataset.bind==="gebaeude.plz"){ if(plzApply(S.cur)){ const f=$('[data-bind="klima.te"]'); if(f) f.value=S.cur.klima.te; } paintPlz(); }
+    if(t.dataset.bind==="klima.te"){ S.cur.klima.teSrc="hand"; paintPlz(); }
+    if(t.dataset.bind.startsWith("anlage.v")&&/^anlage\.v(Hw|Eta|Jaz|Ww|Vbh)$/.test(t.dataset.bind)){ const v=$("#verbtab"); if(v) v.innerHTML=verbTable(S.cur,calc(S.cur)); }
+    if(t.dataset.bind.startsWith("anlage.wp")){ const w=$("#wptab"); if(w) w.innerHTML=wpTable(S.cur,calc(S.cur)); }
+    if(t.dataset.bind==="gebaeude.baujahr"||t.dataset.bind.startsWith("uvor.")){ applyUvor(S.cur); const ut=$("#uvortab"); if(ut) ut.innerHTML=uvorTable(S.cur); }
+    if(t.dataset.bind.includes(".geo.")){ if(t.dataset.bind.endsWith(".dreh")){ render(); touch(); return; } const gi=$("#geoinfo"); if(gi) gi.textContent=geoInfo(curRoom()); }
+    if(t.hasAttribute("data-nutz")){ const n=NUTZ.find(x=>x[0]===t.value); if(n){ curRoom().ti=String(n[1]); render(); touch(); return; } } refreshCalcs(); touch(); return; }
+  const bt=t.closest("[data-bt]"); if(bt&&t.dataset.bf){ const r=curRoom(), b=r.bt.find(x=>x.id===bt.dataset.bt);
+    const f=t.dataset.bf; b[f]=t.value;
+    if(f==="typ"){ b.adj=TYPES[b.typ].adj; Object.assign(b,uPreset(b.typ,b.adj)); if(!TYPES[b.typ].open) b.in=""; }
+    if(f==="adj"&&isAutoU(b)) Object.assign(b,uPreset(b.typ,b.adj));
+    if(f==="u") b.uSrc="hand";
+    if(["typ","adj"].includes(f)) render(); else refreshCalcs(); touch(); return; }
+  const hke=t.closest("[data-hk]"); if(hke&&t.dataset.hf){ const r=curRoom(), h=r.hk.find(x=>x.id===hke.dataset.hk);
+    h[t.dataset.hf]=t.value; touch(); if(t.dataset.hf==="typ") render(); else paintHk(); return; }
+  const ph=t.closest("[data-ph]"); if(ph&&t.dataset.pf){ const f=S.cur.fotos.find(x=>x.id===ph.dataset.ph); f[t.dataset.pf]=t.value; touch(); if(t.dataset.pf==="kat") render(); }
+});
+app.addEventListener("change",async e=>{ const t=e.target;
+  if(t.dataset.act==="photo"){ const files=[...t.files]; t.value=""; let n=0;
+    for(const f of files){ try{ const src=await compress(f); S.cur.fotos.push({id:uid(),src,cap:"",ref:t.dataset.ref,kat:t.dataset.kat||"",t:Date.now()}); n++ }catch(err){ toast(f.name+": Bild konnte nicht gelesen werden") } }
+    if(n){ touch(); render(); toast(n+(n===1?" Foto":" Fotos")+" hinzugefügt"); } }
+  if(t.dataset.act==="import"){ const files=[...t.files]; t.value=""; let n=0;
+    for(const f of files){ try{ const j=JSON.parse(await f.text()); const p=j.project||j; if(!p.gebaeude||!Array.isArray(p.raeume)) throw 0;
+      try{ if(j.briefkopf&&!localStorage.getItem("aufmass.briefkopf")) bkSet(j.briefkopf) }catch(e){}
+      if(Array.isArray(j.plz)) await plzPut(j.plz.filter(x=>x&&plzOk(x.plz)&&x.te!=null&&!PLZ.has(x.plz))); // eigene Einträge behalten
+      if(S.projects.some(x=>x.id===p.id)){ p.id=uid(); p.gebaeude.bez+=" (Import)"; } p.fotos=p.fotos||[]; p.updated=Date.now();
+      await dbPut(p); S.projects.push(p); n++ }catch(err){ toast(f.name+": keine gültige Aufmaß-Sicherung") } }
+    if(n){ render(); toast(n+" Objekt"+(n>1?"e":"")+" importiert"); } }
+  if(t.dataset.act==="plzimport"){ const f=t.files[0]; t.value=""; if(!f) return;
+    const list=plzParse(await f.text());
+    if(!list.length){ toast(f.name+": keine Zeilen mit PLZ und θe gefunden"); return; }
+    await plzPut(list); if(plzApply(S.cur)) touch(); render(); toast(list.length+" PLZ-Werte eingespielt"); }
+});
+document.addEventListener("click",async e=>{ const el=e.target.closest("[data-act]"); if(!el) return; const a=el.dataset.act;
+  if(el.tagName==="INPUT") return;
+  if(a!=="pdel"&&a!=="rdel"&&a!=="geogen") S.armed=null;
+  switch(a){
+    case "open": if(e.target.closest("button")) return; S.cur=S.projects.find(p=>p.id===el.dataset.id); S.tab="geb"; S.room=null; render(); scrollTo(0,0); break;
+    case "pnew": { const p=newProject(); S.projects.push(p); await dbPut(p); S.cur=p; S.tab="geb"; S.room=null; render(); break; }
+    case "pdel": e.stopPropagation(); if(S.armed===el.dataset.id){ await dbDel(el.dataset.id); S.projects=S.projects.filter(p=>p.id!==el.dataset.id); S.armed=null; toast("Objekt gelöscht"); } else S.armed=el.dataset.id; render(); break;
+    case "home": clearTimeout(saveT); if(S.cur) await dbPut(S.cur); S.cur=null; render(); break;
+    case "tab": S.tab=el.dataset.tab; S.room=null; render(); scrollTo(0,0); break;
+    case "rnew": { const r=newRoom(S.cur,el.dataset.we||""); S.cur.raeume.push(r); S.room=r.id; touch(); render(); break; }
+    case "geogen": { const r=curRoom(), key=r.id+":geo";
+      if(r.bt.length&&S.armed!==key){ S.armed=key; render(); break; }
+      S.armed=null; if(!geoBuild(r)){ toast("Länge, Breite und Höhe eintragen"); render(); break; }
+      S.geoOpen=false; touch(); render(); toast(r.bt.length?r.bt.length+" Bauteile angelegt":"Nur Grundfläche gesetzt – keine Bauteile gewählt"); break; }
+    case "laser": laserDialog(); break;
+    case "laserconn": laserConnect(); break;
+    case "laserre": L.manual=false; L.tries=0; laserOpen(); break;
+    case "laseroff": laserOff(); break;
+    case "reload": clearTimeout(saveT); if(S.cur) await dbPut(S.cur); location.reload(); break;
+    case "lasercopy": { const t="Laser-Diagnose · App-Version "+APP_VERSION+"\n"+L.info+"\n\n"+L.steps.join("\n")+"\n\nRahmen:\n"+(L.log.join("\n")||"keine");
+      try{ await navigator.clipboard.writeText(t); toast("Diagnose kopiert – z. B. in eine Mail einfügen"); }catch(err){ deliver("laser-diagnose.txt",t,"text/plain"); } break; }
+    case "wenew": { const w=newWE(S.cur); S.cur.einheiten.push(w); S.cur.gebaeude.we=String(S.cur.einheiten.length); touch(); render(); toast(w.name+" angelegt"); break; }
+    case "wedel": { const id=el.dataset.we; if(S.cur.raeume.some(r=>r.we===id)) break; S.cur.einheiten=S.cur.einheiten.filter(w=>w.id!==id);
+      if(!S.cur.einheiten.length) S.cur.einheiten.push(newWE(S.cur)); S.cur.gebaeude.we=String(S.cur.einheiten.length); touch(); render(); break; }
+    case "room": S.room=el.dataset.id; S.geoOpen=false; render(); scrollTo(0,0); break;
+    case "rback": S.room=null; render(); break;
+    case "goroom": { S.tab="raum"; S.room=el.dataset.id; S.geoOpen=false; render(); const t=el.dataset.btId&&$(`[data-bt="${el.dataset.btId}"]`);
+      if(t){ t.scrollIntoView({block:"center"}); t.classList.add("laserhit"); setTimeout(()=>t.classList.remove("laserhit"),1500); } else scrollTo(0,0); break; }
+    case "rdup": { const r=curRoom(); const map={}; const copy=JSON.parse(JSON.stringify(r)); copy.id=uid(); copy.name=r.name+" (Kopie)";
+      copy.bt.forEach(b=>{const n=uid();map[b.id]=n;b.id=n}); (copy.hk||[]).forEach(h=>h.id=uid()); copy.bt.forEach(b=>{if(b.in)b.in=map[b.in]||""});
+      S.cur.raeume.splice(S.cur.raeume.indexOf(r)+1,0,copy); S.room=copy.id; touch(); render(); toast("Raum dupliziert"); break; }
+    case "rdel": { const r=curRoom(); if(S.armed===r.id){ S.cur.raeume=S.cur.raeume.filter(x=>x!==r); S.cur.fotos.forEach(f=>{if(f.ref===r.id)f.ref="geb"}); S.room=null; S.armed=null; touch(); toast("Raum gelöscht"); } else S.armed=r.id; render(); break; }
+    case "btnew": { const r=curRoom(); const t=el.dataset.typ; const ex={};
+      if(TYPES[t].open){ const w=[...r.bt].reverse().find(o=>o.typ==="aw"); if(w){ex.in=w.id; ex.ri=w.ri} }
+      if(["og","kd","bp","dn"].includes(t)&&nz(r.fl)) ex.a=r.fl;
+      if(t==="aw"||t==="iw") ex.h=r.h;
+      r.bt.push(newBt(t,ex)); touch(); render(); break; }
+    case "btopen": { const r=curRoom(), w=r.bt.find(x=>x.id===el.closest("[data-bt]").dataset.bt); if(!w) break;
+      const o=newBt(el.dataset.typ,{in:w.id,ri:w.ri,bez:w.typ==="da"?"Dachfenster":""}); r.bt.push(o); touch(); render();
+      $(`[data-bt="${o.id}"] [data-bf="b"]`)?.focus(); break; }
+    case "hknew": { const r=curRoom(); r.hk=r.hk||[]; const prev=r.hk.at(-1); const h=newHk(); if(prev) Object.assign(h,{typ:prev.typ,h:prev.h}); r.hk.push(h); touch(); render();
+      $(`[data-hk="${h.id}"] [data-hf="l"]`)?.focus(); break; }
+    case "hkdup": { const r=curRoom(), id=el.closest("[data-hk]").dataset.hk, h=r.hk.find(x=>x.id===id); r.hk.splice(r.hk.indexOf(h)+1,0,Object.assign({},h,{id:uid()})); touch(); render(); break; }
+    case "hkdel": { const r=curRoom(), id=el.closest("[data-hk]").dataset.hk; r.hk=r.hk.filter(x=>x.id!==id); touch(); render(); break; }
+    case "btdup": { const r=curRoom(); const id=el.closest("[data-bt]").dataset.bt; const b=r.bt.find(x=>x.id===id); const c=Object.assign({},b,{id:uid()}); r.bt.splice(r.bt.indexOf(b)+1,0,c); touch(); render(); break; }
+    case "btdel": { const r=curRoom(); const id=el.closest("[data-bt]").dataset.bt; r.bt=r.bt.filter(x=>x.id!==id); r.bt.forEach(b=>{if(b.in===id)b.in=""}); touch(); render(); break; }
+    case "phdel": { const id=el.closest("[data-ph]").dataset.ph; S.cur.fotos=S.cur.fotos.filter(f=>f.id!==id); touch(); render(); break; }
+    case "xjson": deliver(fname(S.cur,"json"),JSON.stringify({app:"aufmass-heizlast",version:1,exported:new Date().toISOString(),project:S.cur,plz:[...PLZ.values()],briefkopf:bkGet()},null,1),"application/json"); break;
+    case "plzsave": { const k=String(S.cur.gebaeude.plz).trim(); if(!plzOk(k)||isNaN(num(S.cur.klima.te))) break;
+      await plzPut([{plz:k,te:S.cur.klima.te.trim(),ort:S.cur.gebaeude.ort||"",src:"hand",t:Date.now()}]); S.cur.klima.teSrc="plz"; touch(); paintPlz(); toast("θe für PLZ "+k+" gemerkt"); break; }
+    case "plzuse": { const e=PLZ.get(String(S.cur.gebaeude.plz).trim()); if(!e) break; S.cur.klima.te=e.te; S.cur.klima.teSrc="plz"; touch(); render(); break; }
+    case "plzexport": deliver("plz-norm-aussentemperatur_"+today()+".csv",csvPlz(),"text/csv;charset=utf-8"); break;
+    case "xcsvb": deliver(fname(S.cur,"bauteile.csv"),csvBauteile(S.cur),"text/csv;charset=utf-8"); break;
+    case "xcsvr": deliver(fname(S.cur,"raeume.csv"),csvRaeume(S.cur),"text/csv;charset=utf-8"); break;
+    case "protokoll": prDialog(); break;
+    case "prgo": { const o={}; document.querySelectorAll("[data-pr]").forEach(c=>o[c.dataset.pr]=c.checked); try{ localStorage.setItem("aufmass.protokoll",JSON.stringify(o)) }catch(e){}
+      $("#layer").innerHTML=""; prPrint(o); break; }
+    case "bkedit": bkDialog(); break;
+    case "bklogodel": { const b=bkGet(); b.logo=""; bkSet(b); $("#bklogo").outerHTML=bkLogoBox(b); if(!S.cur) render(); break; }
+    case "bksave": { const b=bkGet(); document.querySelectorAll("[data-bk]").forEach(i=>b[i.dataset.bk]=i.value.trim()); if(bkSet(b)){ $("#layer").innerHTML=""; toast("Briefkopf gespeichert"); if(!S.cur) render(); } break; }
+    case "close": if(e.target===el) $("#layer").innerHTML=""; break;
+    case "copyx": { const ta=$("#xtext"); try{ await navigator.clipboard.writeText(ta._full||ta.value); toast("Kopiert"); }catch(err){ ta.removeAttribute("readonly"); ta.focus(); ta.select(); toast("Text markiert – jetzt kopieren"); } break; }
+  }
+});
+app.addEventListener("toggle",e=>{ if(e.target.classList.contains("geo")) S.geoOpen=e.target.open; },true);
+app.addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.classList.contains("pcard")) e.target.click(); });
+document.addEventListener("focusin",e=>{ if(isLenField(e.target)) L.field=fieldSel(e.target); });
+document.addEventListener("change",async e=>{ if(e.target.dataset.act==="lasernext") L.next=e.target.checked;
+  if(e.target.dataset.act==="bklogo"){ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+    try{ const b=bkGet(); b.logo=await bkLogoLoad(f); if(!bkSet(b)) return; $("#bklogo").outerHTML=bkLogoBox(b); if(!S.cur) render(); toast("Logo gespeichert"); }
+    catch(err){ toast("Logo: "+err.message); } } });
+document.addEventListener("visibilitychange",()=>{ if(document.hidden&&S.cur){ clearTimeout(saveT); dbPut(S.cur) } });
+
+/* ============ Start ============ */
+(async function init(){
+  try{ db=await idbOpen(); storageOk=true; try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist() }catch(e){} }catch(e){ db=null; storageOk=false; }
+  S.projects=await dbAll(); await plzLoad();
+  let seeded=false; try{ seeded=localStorage.getItem("aufmass.seeded")==="1" }catch(e){}
+  if(!S.projects.length&&!seeded){ const p=sample(); await dbPut(p); S.projects=[p]; try{localStorage.setItem("aufmass.seeded","1")}catch(e){} }
+  document.body.insertAdjacentHTML("beforeend",Object.entries(UPRESET).map(([k,l])=>`<datalist id="u-${k}">${l.map(([v,t])=>`<option value="${v}">${t}</option>`).join("")}</datalist>`).join(""));
+  render();
+})();
+</script>
+
+<script>
+// Service Worker: beim Start und beim Zurückkehren in die App nach Updates suchen. Übernimmt ein neuer
+// Service Worker die Seite, läuft noch die alte Version – dann Hinweis mit „Neu laden“ zeigen.
+if("serviceWorker" in navigator){
+  const hadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    document.addEventListener("visibilitychange",()=>{ if(!document.hidden) reg.update().catch(()=>{}) });
+  }).catch(()=>{});
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(hadController) showUpdate(); });
+}
+// Passwortschutz (Cloudflare): Ist die Anmeldung abgelaufen, kommen keine Updates mehr an – dann Hinweis zeigen.
+// Lokal (ohne Middleware) antwortet /__auth mit 404 und es passiert nichts.
+function checkAuth(){ if(!navigator.onLine) return;
+  fetch("/__auth",{cache:"no-store",credentials:"same-origin"}).then(r=>{ if(r.status===401&&!document.getElementById("authbar"))
+    document.body.insertAdjacentHTML("beforeend",'<div class="updbar noprint" id="authbar" role="status"><span>Anmeldung abgelaufen – für Updates neu anmelden.</span><a class="btn small primary" href="/login">Anmelden</a></div>'); }).catch(()=>{}); }
+checkAuth(); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkAuth() });
+</script>
+</body>
+</html>

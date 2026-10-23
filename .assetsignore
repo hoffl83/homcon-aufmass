@@ -1,0 +1,14 @@
+# Nur die App ausliefern – Quelltext, Doku und Konfiguration nicht
+.git
+.gitignore
+.assetsignore
+worker.js
+wrangler.jsonc
+CLAUDE.md
+LIESMICH.txt
+*.docx
+*.csv
+*.json
+backups
+node_modules
+.wrangler

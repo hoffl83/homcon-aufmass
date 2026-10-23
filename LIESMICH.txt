@@ -1,0 +1,39 @@
+Aufmaß Heizlast – Offline-App für die Vor-Ort-Aufnahme (Android-Tablet)
+=====================================================
+
+Inhalt: index.html, manifest.webmanifest, sw.js, icon.svg, icon-192.png, icon-512.png
+
+Installation
+1. Den Ordner auf einen Webserver mit HTTPS legen, z. B.
+   - TrueNAS: Nginx- oder Caddy-App, Ordner als Webroot, Zugriff über HTTPS
+     (Offline-Funktion und Installation brauchen HTTPS)
+   - oder kostenlos: GitHub Pages / Cloudflare Pages
+2. Die Adresse in Chrome auf dem Tablet öffnen.
+3. Chrome-Menü (⋮) → „App installieren" bzw. „Zum Startbildschirm hinzufügen".
+4. Danach startet die App vom Startbildschirm und funktioniert ohne Internet.
+
+Passwortschutz (Cloudflare Worker)
+- worker.js sperrt die ganze Seite hinter einem Passwort; wrangler.jsonc sorgt dafür,
+  dass der Worker vor jeder Datei läuft. Der Name in wrangler.jsonc muss zum Worker passen.
+- Vorher im Cloudflare-Dashboard unter Workers & Pages → Worker → Settings →
+  Variables and Secrets zwei Secrets anlegen:
+    APP_PASSWORD  das Zugangspasswort (lang, z. B. 4–5 Wörter)
+    AUTH_SECRET   eine lange Zufallszeichenkette (z. B. openssl rand -hex 32)
+- Ohne diese Variablen zeigt die Seite nur „Passwortschutz ist nicht eingerichtet“.
+- AUTH_SECRET ändern meldet alle Geräte ab.
+
+Briefkopf und Logo
+- Das Repository enthält bewusst keine Firmendaten. Briefkopf und Logo in der App
+  unter „Briefkopf für Protokolle“ (unten in der Objektliste) eintragen bzw. hochladen.
+  Sie liegen nur auf dem Gerät und stehen in jeder JSON-Sicherung.
+
+Daten
+- Alle Aufnahmen liegen nur auf dem Tablet (IndexedDB im Browser).
+- Regelmäßig unter „Ergebnis → Sicherung (JSON)" exportieren.
+  Achtung: Chrome-Websitedaten löschen löscht auch die Aufnahmen.
+- Die JSON-Sicherung lässt sich auf jedem Gerät wieder importieren.
+
+Heizlast
+Vereinfachtes Verfahren nach DIN EN 12831-1 (Transmission mit pauschalem
+Wärmebrückenzuschlag + Mindestluftwechsel). Für Vor-Ort-Abschätzung gedacht;
+verbindliche Berechnung in Hottgenroth.
